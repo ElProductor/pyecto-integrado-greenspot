@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { apiService } from './services/api';
-import type { Batch, InventoryMovement } from './types';
-import { useApp, Flujo, Ctx, num, cant, bodegas, nombreBod, stockEn, esGeneradora, esCliente, sinCert, TOPE_CAMION } from './ui';
+import { apiService } from '../datos/api';
+import type { Batch, InventoryMovement } from '../datos/tipos';
+import { Flujo, Ctx, useApp } from '../logica/contexto';
+import { num, cant } from '../logica/formato';
+import { sinCert, nombreBod, bodegas, stockEn, esGeneradora, esCliente, TOPE_CAMION } from '../logica/reglas';
 
 type Op = { v: string; b: string; s?: string; d?: string; off?: boolean };
 type Tipo = 'op' | 'peso' | 'kilos' | 'conteo' | 'multi';

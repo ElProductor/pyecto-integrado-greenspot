@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { getSupabase } from '../lib/supabase';
-import type { Cuenta } from '../context/IAMContext';
+import { Cuenta } from '../datos/sesion';
+import { getSupabase } from '../datos/supabase';
 
 const ROL = { admin: 'Administración', operator: 'Operario' };
 
@@ -33,7 +33,7 @@ export const PinCambio: React.FC<{ cuenta: Cuenta; cambiarA: (id: string, pin: s
   );
 };
 
-export const LoginView: React.FC<{ cuentas: Cuenta[]; cambiarA: (id: string, pin: string) => Promise<void>; cancelar?: () => void }> = ({ cuentas, cambiarA, cancelar }) => {
+export const Ingreso: React.FC<{ cuentas: Cuenta[]; cambiarA: (id: string, pin: string) => Promise<void>; cancelar?: () => void }> = ({ cuentas, cambiarA, cancelar }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- GREENSPOT - DATOS SEMILLA (SEED DATA)
+-- GREENSPOT · 002 · Datos de ejemplo (bodegas, materiales, empresas de Los Lagos)
 -- Operaciones en Los Lagos / Patagonia (Acuicultura & Economía Circular)
 -- ==============================================================================
 

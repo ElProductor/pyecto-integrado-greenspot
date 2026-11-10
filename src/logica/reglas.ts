@@ -1,41 +1,5 @@
-import React, { createContext, useContext } from 'react';
-import type { Batch, BatchStatus, InventoryMovement, MaterialProduct, Perfil, Stakeholder, StockRow, ValorizationCertificate, Warehouse } from './types';
-
-/* ---------- datos compartidos por todas las pantallas ---------- */
-export interface Datos {
-  mat: MaterialProduct[]; lotes: Batch[]; mov: InventoryMovement[]; bod: Warehouse[];
-  emp: Stakeholder[]; cert: ValorizationCertificate[]; stock: StockRow[]; usuarios: Perfil[];
-}
-export type Vista = 'inicio' | 'lotes' | 'mat' | 'mov' | 'emp' | 'cert' | 'rep' | 'conf';
-export type PanelSel = { t: 'lote' | 'mat' | 'emp' | 'cert' | 'usuario' | 'mov'; id: string } | null;
-export type Flujo = 'mov' | 'camion' | 'salida' | 'mover' | 'contar' | 'cert';
-export type DlgSel = { t: 'flujo'; f: Flujo; pre?: string } | { t: 'form'; nombre: 'empresa' | 'material'; id?: string } | { t: 'cambio' } | { t: 'mipin' } | { t: 'ajuste'; id: string; modo: 'anular' | 'corregir' } | null;
-
-export interface Ctx {
-  D: Datos; esAdmin: boolean; usuario: string; uid: string;
-  recargar: () => Promise<void>;
-  aviso: (t: string) => void;
-  setPanel: (p: PanelSel) => void;
-  setDlg: (d: DlgSel) => void;
-  ir: (v: Vista) => void;
-}
-export const AppCtx = createContext<Ctx | null>(null);
-export const useApp = () => { const c = useContext(AppCtx); if (!c) throw new Error('useApp fuera de AppCtx'); return c; };
-
-/* ---------- formato ---------- */
-export const num = (n: number) => Math.round(Number(n) || 0).toLocaleString('es-CL');
-export const uni = (u: string) => (u === 'units' ? 'u' : u === 'big_bag' ? 'maxisacos' : u);
-export const cant = (n: number, u = 'kg') => num(n) + ' ' + uni(u);
-export const toneladas = (kg: number) => (kg / 1000).toLocaleString('es-CL', { maximumFractionDigits: 1 });
-export function fecha(iso?: string) {
-  if (!iso) return '—';
-  const d = new Date(iso), hoy = new Date(), ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
-  const h = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-  if (d.toDateString() === hoy.toDateString()) return 'Hoy ' + h;
-  if (d.toDateString() === ayer.toDateString()) return 'Ayer ' + h;
-  return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: d.getFullYear() === hoy.getFullYear() ? undefined : '2-digit' }) + ' ' + h;
-}
-export const RUT_OK = /^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/;
+import type { BatchStatus, Warehouse, Stakeholder, MaterialProduct, Batch, InventoryMovement } from '../datos/tipos';
+import { Datos, Ctx } from './contexto';
 
 /* ---------- lotes ---------- */
 export const ETAPAS: BatchStatus[] = ['received', 'washing_sorting', 'shredded', 'pelletized', 'dispatched'];
@@ -113,25 +77,7 @@ export function bloqueoAjuste(D: Datos, m: InventoryMovement, esAdmin: boolean, 
 }
 export const recepcionDe = (D: Datos, l: Batch) => D.mov.find(x => x.batch_id === l.id && x.movement_type === 'reception' && !ajusteDe(x));
 
-/* ---------- piezas visuales ---------- */
-const ICON: Record<string, string> = {
-  inicio: 'M3 11l9-7 9 7v9H3z', lotes: 'M3 5h18v5H3zM3 14h18v5H3z', mat: 'M4 7l8-4 8 4-8 4zM4 7v10l8 4 8-4V7',
-  mov: 'M7 4v16l-3-3M17 20V4l3 3', emp: 'M4 21V5h10v16M14 9h6v12M7 9h3M7 13h3M7 17h3',
-  cert: 'M6 3h9l4 4v14H6zM9 12h6M9 16h6', rep: 'M4 20V10M10 20V4M16 20v-7M22 20H2', conf: 'M12 8a4 4 0 100 8 4 4 0 000-8zM12 2v3M12 19v3M2 12h3M19 12h3'
-};
-export const Ico: React.FC<{ n: string }> = ({ n }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[n]} /></svg>
-);
-export const Titulo: React.FC<{ t: string; children?: React.ReactNode }> = ({ t, children }) => (
-  <div className="titulo"><h1>{t}</h1><div className="acciones">{children}</div></div>
-);
-export function Pestanas<T extends string>({ valor, set, ops }: { valor: T; set: (v: T) => void; ops: [T, string, number?][] }) {
-  return <div className="pestanas">{ops.map(([v, t, n]) => (
-    <button key={v} className={valor === v ? 'on' : ''} onClick={() => set(v)}>{t}{n !== undefined && <small>{n}</small>}</button>
-  ))}</div>;
-}
-export const Etapa: React.FC<{ l: Batch }> = ({ l }) => {
-  const i = ETAPAS.indexOf(l.status);
-  if (loteAnulado(l)) return <span className="estado rojo">Anulado</span>;
-  return <div className="etapa"><span className="tr">{[0, 1, 2, 3, 4].map(k => <i key={k} className={k <= i ? 'ok' : ''} />)}</span>{NOMBRE_ETAPA[l.status]}</div>;
-};
+/* ---------- empresas: kilos ---------- */
+export const kilosEntregados = (D: Ctx['D'], id: string) => D.lotes.filter(l => l.supplier_id === id).reduce((a, l) => a + Number(l.initial_weight_kg), 0);
+// Las salidas guardan el cliente en la referencia («Despacho a …»).
+export const kilosComprados = (D: Ctx['D'], nombre: string) => D.mov.filter(m => m.movement_type === 'dispatch' && m.unit === 'kg' && !anulado(D, m) && (m.reference_doc || '').includes(nombre)).reduce((a, m) => a + vigente(D, m), 0);

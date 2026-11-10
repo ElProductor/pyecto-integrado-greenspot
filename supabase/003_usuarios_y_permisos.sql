@@ -1,6 +1,6 @@
 -- ==============================================================================
--- GREENSPOT · 002 · Usuarios, roles y permisos reales
--- Se aplica DESPUÉS de schema.sql (y seed.sql si se quieren datos de ejemplo).
+-- GREENSPOT · 003 · Usuarios, roles y permisos reales
+-- Se aplica DESPUÉS de 001_esquema.sql y 002_datos_ejemplo.sql.
 -- Reemplaza el acceso "cualquiera puede todo" por:
 --   * Solo usuarios con sesión iniciada y cuenta activa ven datos.
 --   * Operario: ve la planta, registra movimientos, crea lotes y avanza etapas.

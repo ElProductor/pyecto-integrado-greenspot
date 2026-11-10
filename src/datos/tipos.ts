@@ -133,105 +133,10 @@ export interface ValorizationCertificate {
   stakeholder?: Stakeholder;
   batch?: Batch;
 }
-
 // -------------------------------------------------------------
-// CONTROL DE CALIDAD DE LABORATORIO (QC)
-// -------------------------------------------------------------
-export interface QualityControlTest {
-  id: string;
-  test_number: string;
-  batch_id: string;
-  tester_name: string;
-  test_date: string;
-  mfi_measured: number;
-  density_measured: number;
-  moisture_percentage: number;
-  ash_content_percentage: number;
-  tensile_strength_mpa: number;
-  status: 'approved' | 'rejected' | 'conditional';
-  notes?: string;
-  created_at?: string;
-  batch?: Batch;
-}
-
-// -------------------------------------------------------------
-// ÓRDENES DE PRODUCCIÓN & BALANCE DE MASA
-// -------------------------------------------------------------
-export interface ProductionOrder {
-  id: string;
-  order_number: string;
-  line_name: string;
-  input_material_id: string;
-  output_material_id: string;
-  input_weight_kg: number;
-  output_weight_kg: number;
-  scrap_weight_kg: number;
-  yield_percentage: number;
-  status: 'in_progress' | 'completed' | 'paused';
-  start_date: string;
-  completion_date?: string;
-  supervisor_name: string;
-  input_material?: MaterialProduct;
-  output_material?: MaterialProduct;
-}
-
-// -------------------------------------------------------------
-// METAS LEY REP
-// -------------------------------------------------------------
-export interface RepTargetCompliance {
-  id: string;
-  stakeholder_id: string;
-  year: number;
-  annual_target_kg: number;
-  current_valorized_kg: number;
-  compliance_percentage: number;
-  status: 'on_track' | 'at_risk' | 'achieved';
-  stakeholder?: Stakeholder;
-}
-
-export interface KpiMetrics {
-  totalRecycledKg: number;
-  totalCo2AvoidedKg: number;
-  totalWaterSavedLiters: number;
-  totalOilSavedBarrels: number;
-  activeBatchesCount: number;
-  criticalStockAlertsCount: number;
-  totalStockKg: number;
-  totalFinishedProductsUnits: number;
-  averageYieldPercentage: number;
-  qualityApprovalRate: number;
-}
-
-// -------------------------------------------------------------
-// CONTROL DE ACCESO Y ROLES (IAM)
+// USUARIOS Y ROLES
 // -------------------------------------------------------------
 export type UserRole = 'admin' | 'operator';
-
-export interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  title: string;
-  plantLocation: string;
-  avatarInitials: string;
-}
-
-export interface IAMPermissions {
-  canViewAllTabs: boolean;
-  canViewClients: boolean;
-  canManageClients: boolean;
-  canDeleteRecords: boolean;
-  canViewFinancials: boolean;
-  canEditTechnicalSpecs: boolean;
-  canIssueCertificates: boolean;
-  canAccessDatabaseSettings: boolean;
-  canExportDatabase: boolean;
-  canRecordMovements: boolean;
-  canWeighTrucks: boolean;
-  canAdvanceBatches: boolean;
-  canAdjustPhysicalStock: boolean;
-}
 
 export interface StockRow { material_id: string; warehouse_id: string; quantity: number }
 

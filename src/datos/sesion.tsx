@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { createClient, type Session } from '@supabase/supabase-js';
-import { UserRole, Perfil } from '../types';
-import { getSupabase, getStoredSupabaseConfig } from '../lib/supabase';
+import { getSupabase, supabaseConfig } from './supabase';
+import type { UserRole, Perfil } from './tipos';
 
 /** Cuenta que ya entró con contraseña en este equipo: se puede volver a ella con su PIN. */
 export interface Cuenta { id: string; email: string; nombre: string; rol: UserRole; rt: string }
@@ -80,7 +80,7 @@ export const IAMProvider: React.FC<{ children: React.ReactNode; login: (cuentas:
   const cambiarA = useCallback(async (id: string, pin: string) => {
     const c = leer().find(x => x.id === id);
     if (!supabase || !c) throw new Error('Esa cuenta ya no está en este equipo.');
-    const { url, key } = getStoredSupabaseConfig();
+    const { url, key } = supabaseConfig;
     const aparte = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, storageKey: 'greenspot-cambio' } });
     const { data, error } = await aparte.auth.refreshSession({ refresh_token: c.rt });
     if (error || !data.session) { quitarCuenta(id); refrescar(n => n + 1); throw new Error('La sesión de esa cuenta venció. Entra con su contraseña.'); }

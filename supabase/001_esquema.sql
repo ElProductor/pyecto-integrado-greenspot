@@ -1,5 +1,5 @@
 -- ==============================================================================
--- GREENSPOT - SISTEMA INTEGRADO DE INVENTARIO Y TRAZABILIDAD CIRCULAR
+-- GREENSPOT · 001 · Esquema: tablas, tipos, triggers de stock y RLS base
 -- Schema DDL para Supabase (PostgreSQL) con DB Storage, RLS y Triggers
 -- Empresa: Greenspot SpA (Economía Circular y Valorización de Plásticos)
 -- ==============================================================================

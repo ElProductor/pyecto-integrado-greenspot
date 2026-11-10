@@ -1,6 +1,6 @@
-import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
-import { ValorizationCertificate } from '../types';
+import jsPDF from 'jspdf';
+import type { ValorizationCertificate } from '../datos/tipos';
 
 export async function generateCertificatePdf(cert: ValorizationCertificate): Promise<void> {
   const doc = new jsPDF({

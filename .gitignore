@@ -27,13 +27,5 @@ dist-ssr
 .env
 .env.production
 
-# Binaries & Legacy files
-*.exe
-*.dll
-*.pdb
-*.deps.json
-*.runtimeconfig.json
-OmniProject4K*
-omni_emulator_4k/
-omni_player_4k.html
-Iniciar_Omni*.bat
+# Capturas que dejan las pruebas
+pruebas/capturas/

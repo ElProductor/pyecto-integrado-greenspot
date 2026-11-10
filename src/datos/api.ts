@@ -1,18 +1,5 @@
-import { getSupabase } from '../lib/supabase';
-import {
-  Warehouse,
-  Stakeholder,
-  MaterialProduct,
-  Batch,
-  InventoryMovement,
-  ValorizationCertificate,
-  QualityControlTest,
-  ProductionOrder,
-  RepTargetCompliance,
-  KpiMetrics,
-  StockRow,
-  Perfil
-} from '../types';
+import { getSupabase } from './supabase';
+import type { Warehouse, Stakeholder, MaterialProduct, Batch, InventoryMovement, ValorizationCertificate, StockRow, Perfil } from './tipos';
 
 // Todo pasa por Supabase: sin conexión no hay datos (nada se guarda en el navegador).
 function db() {
@@ -27,7 +14,7 @@ async function q<T>(req: PromiseLike<{ data: T | null; error: { message: string 
   return data as T;
 }
 
-// Bodega donde nace el stock de cada categoría (igual que en seed.sql)
+// Bodega donde nace el stock de cada categoría (igual que en supabase/002_datos_ejemplo.sql)
 const BODEGA_POR_CATEGORIA: Record<string, string> = { raw_material: 'BOD-PM-ACOPIO', in_process: 'BOD-PM-PLANTA' };
 const bodegaDe = (whs: Warehouse[], category: string) =>
   whs.find(w => w.code === (BODEGA_POR_CATEGORIA[category] || 'BOD-DAL-DESPACHO')) || whs[0];
@@ -40,7 +27,6 @@ export const apiService = {
     q(db().from('stakeholders').insert(item).select().single()),
   updateStakeholder: (id: string, updates: Partial<Stakeholder>): Promise<Stakeholder> =>
     q(db().from('stakeholders').update(updates).eq('id', id).select().single()),
-  async deleteStakeholder(id: string) { await q(db().from('stakeholders').delete().eq('id', id)); return true; },
 
   getMaterials: (): Promise<MaterialProduct[]> => q(db().from('materials_and_products').select('*').order('name')),
 
@@ -140,27 +126,4 @@ export const apiService = {
     .order('issue_date', { ascending: false })),
   createCertificate: (item: Omit<ValorizationCertificate, 'id' | 'created_at'>): Promise<ValorizationCertificate> =>
     q(db().from('valorization_certificates').insert(item).select().single()),
-
-  // shortcut: calidad, órdenes de producción y metas REP aún no tienen tabla; vacías hasta que el grupo las defina.
-  getQualityTests: async (): Promise<QualityControlTest[]> => [],
-  getProductionOrders: async (): Promise<ProductionOrder[]> => [],
-  getRepTargets: async (): Promise<RepTargetCompliance[]> => [],
-
-  kpiFrom(materials: MaterialProduct[], batches: Batch[], certificates: ValorizationCertificate[]): KpiMetrics {
-    const sum = (f: (c: ValorizationCertificate) => number) => certificates.reduce((a, c) => a + Number(f(c) || 0), 0);
-    return {
-      totalRecycledKg: sum(c => c.total_kg_valorized),
-      totalCo2AvoidedKg: sum(c => c.co2_avoided_kg),
-      totalWaterSavedLiters: sum(c => c.water_saved_liters),
-      totalOilSavedBarrels: sum(c => c.oil_saved_barrels),
-      activeBatchesCount: batches.filter(b => b.status !== 'dispatched').length,
-      criticalStockAlertsCount: materials.filter(m => Number(m.current_stock) <= Number(m.minimum_stock)).length,
-      totalStockKg: materials.filter(m => m.unit === 'kg' || m.unit === 'ton')
-        .reduce((a, m) => a + (m.unit === 'ton' ? m.current_stock * 1000 : Number(m.current_stock)), 0),
-      totalFinishedProductsUnits: materials.filter(m => m.category === 'finished_product' && m.unit === 'units')
-        .reduce((a, m) => a + Number(m.current_stock), 0),
-      averageYieldPercentage: 0,
-      qualityApprovalRate: 0
-    };
-  }
 };
