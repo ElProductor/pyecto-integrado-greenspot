@@ -12,7 +12,8 @@ export type MovementType =
   | 'production_intake'   // Consumo hacia molienda/extrusión
   | 'production_output'   // Generación de pellets o productos
   | 'internal_transfer'   // Traslado entre bodegas
-  | 'waste_adjustment';   // Ajuste de merma
+  | 'waste_adjustment'    // Ajuste de merma
+  | 'count_adjustment_in'; // Sobrante encontrado en conteo físico
 
 export type StakeholderType = 'generator_supplier' | 'buyer_customer' | 'both';
 
@@ -103,6 +104,7 @@ export interface InventoryMovement {
   notes?: string;
   document_url?: string;
   created_at: string;
+  created_by?: string | null;
   // Joins opcionales
   material?: MaterialProduct;
   batch?: Batch;
@@ -230,3 +232,7 @@ export interface IAMPermissions {
   canAdvanceBatches: boolean;
   canAdjustPhysicalStock: boolean;
 }
+
+export interface StockRow { material_id: string; warehouse_id: string; quantity: number }
+
+export interface Perfil { id: string; full_name: string; email: string; role: UserRole; is_active: boolean; last_seen_at?: string | null }

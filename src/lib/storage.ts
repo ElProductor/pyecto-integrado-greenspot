@@ -9,7 +9,7 @@ export interface UploadResult {
 }
 
 /**
- * Sube un archivo a Supabase Storage (o fallback a DataURL en modo local)
+ * Sube un archivo a Supabase Storage (sin conexión, falla: nada se guarda en el navegador)
  */
 export async function uploadFileToStorage(
   file: File,
@@ -17,48 +17,15 @@ export async function uploadFileToStorage(
   folder: string = 'uploads'
 ): Promise<UploadResult> {
   const supabase = getSupabase();
-  const fileExt = file.name.split('.').pop() || 'dat';
   const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
   const filePath = `${folder}/${Date.now()}_${cleanFileName}`;
 
-  if (supabase) {
-    try {
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) {
-        console.warn('Error subiendo a Supabase Storage, aplicando fallback:', error.message);
-      } else if (data) {
-        const { data: publicUrlData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(data.path);
-
-        return {
-          url: publicUrlData.publicUrl,
-          path: data.path,
-          isSupabaseHosted: true
-        };
-      }
-    } catch (err) {
-      console.warn('Fallo en Supabase Storage:', err);
-    }
-  }
-
-  // Fallback: Convierte a base64 Data URL para previsualización inmediata y persistencia local
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve({
-        url: reader.result as string,
-        path: filePath,
-        isSupabaseHosted: false
-      });
-    };
-    reader.onerror = (err) => reject(err);
-    reader.readAsDataURL(file);
-  });
+  if (!supabase) throw new Error('Sin conexión a la base de datos: no se puede subir el archivo.');
+  const { data, error } = await supabase.storage.from(bucket).upload(filePath, file, { cacheControl: '3600', upsert: false });
+  if (error) throw new Error(error.message);
+  // Los buckets son privados: se guarda un enlace firmado.
+  // shortcut: el enlace vence en 1 año; si se necesita para siempre, guardar el path y firmarlo al abrir.
+  const { data: firmado, error: e2 } = await supabase.storage.from(bucket).createSignedUrl(data.path, 60 * 60 * 24 * 365);
+  if (e2) throw new Error(e2.message);
+  return { url: firmado.signedUrl, path: data.path, isSupabaseHosted: true };
 }

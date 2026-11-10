@@ -69,3 +69,18 @@ VALUES
     ('f0000000-0000-0000-0000-000000000001', 'CERT-REP-2026-0089', 'b0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', CURRENT_DATE - 4, 'Boyas y Flotadores Marinos HDPE en Desuso', 14500.00, 26825.00, 72500.00, 29.00, 'Pellet Reciclado Greenspot HDPE Inyección Negro', 'Benjamín González - Dirección General Greenspot', 'GREENSPOT-VERIFY-REP-0089-2026'),
     ('f0000000-0000-0000-0000-000000000002', 'CERT-REP-2026-0094', 'b0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', CURRENT_DATE - 1, 'Cajas Térmicas Plumavit EPS Cosecha de Salmón', 5200.00, 10920.00, 31200.00, 15.60, 'Pellet Reciclado Greenspot PS Poliestireno / Molduras', 'Benjamín González - Dirección General Greenspot', 'GREENSPOT-VERIFY-REP-0094-2026')
 ON CONFLICT (certificate_code) DO NOTHING;
+
+-- ==============================================================================
+-- SALDO INICIAL POR BODEGA
+-- El catálogo trae totales sin bodega; la diferencia se asigna a la bodega natural
+-- de cada categoría para que total = suma de bodegas (lo exige 002_usuarios_y_permisos.sql).
+-- ==============================================================================
+INSERT INTO public.inventory_stock (material_id, warehouse_id, quantity)
+SELECT m.id,
+       CASE m.category WHEN 'raw_material' THEN 'a0000000-0000-0000-0000-000000000001'
+                       WHEN 'in_process'   THEN 'a0000000-0000-0000-0000-000000000002'
+                       ELSE                     'a0000000-0000-0000-0000-000000000003' END::uuid,
+       m.current_stock - COALESCE((SELECT SUM(s.quantity) FROM public.inventory_stock s WHERE s.material_id = m.id), 0)
+FROM public.materials_and_products m
+WHERE m.current_stock > COALESCE((SELECT SUM(s.quantity) FROM public.inventory_stock s WHERE s.material_id = m.id), 0)
+ON CONFLICT (material_id, warehouse_id) DO UPDATE SET quantity = public.inventory_stock.quantity + EXCLUDED.quantity;

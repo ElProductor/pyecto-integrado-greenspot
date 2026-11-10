@@ -1,435 +1,145 @@
-import React, { useState, useEffect } from 'react';
-import { Navbar } from './components/Navbar';
-import { Sidebar, TabType } from './components/Sidebar';
-import { DashboardView } from './views/DashboardView';
-import { InventoryView } from './views/InventoryView';
-import { BatchesView } from './views/BatchesView';
-import { ClientsView } from './views/ClientsView';
-import { CertificatesView } from './views/CertificatesView';
-import { MovementsView } from './views/MovementsView';
-import { SupabaseSettingsView } from './views/SupabaseSettingsView';
-import { CommandPalette } from './components/CommandPalette';
-import { WeighingModal } from './components/WeighingModal';
-import { ExcelSyncModal } from './components/ExcelSyncModal';
-import { ToastProvider, useToast } from './components/Toast';
-import { IAMProvider, useIAM } from './context/IAMContext';
-import { RoleSwitcherModal } from './components/RoleSwitcherModal';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { IAMProvider, useIAM, Cuenta } from './context/IAMContext';
+import { LoginView, PinCambio } from './views/LoginView';
 import { apiService } from './services/api';
-import { 
-  MaterialProduct, 
-  Batch, 
-  InventoryMovement, 
-  Warehouse, 
-  Stakeholder, 
-  ValorizationCertificate, 
-  ProductionOrder,
-  RepTargetCompliance,
-  KpiMetrics,
-  BatchStatus
-} from './types';
-import { Loader2 } from 'lucide-react';
+import { AppCtx, Ctx, Datos, DlgSel, Ico, PanelSel, Vista, enProceso, sinCert } from './ui';
+import { Inicio, Lotes, Materiales, Movimientos, Empresas, Certificados, Reportes, Configuracion } from './vistas';
+import { Panel, FormEmpresa, FormMaterial, AjusteDlg } from './paneles';
+import { FlujoDlg } from './flujos';
 
-function AppContent() {
-  const { success, error: toastError } = useToast();
-  const { role, permissions, isOperator } = useIAM();
-  // Un solo panel principal unificado sin redundancias
-  const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
-  const [loading, setLoading] = useState(true);
+const VACIO: Datos = { mat: [], lotes: [], mov: [], bod: [], emp: [], cert: [], stock: [], usuarios: [] };
+const ADMIN: Vista[] = ['emp', 'cert', 'rep', 'conf'];
+const VISTAS = { inicio: Inicio, lotes: Lotes, mat: Materiales, mov: Movimientos, emp: Empresas, cert: Certificados, rep: Reportes, conf: Configuracion };
 
-  // Protección de rutas según permisos IAM (Operario solo puede ver Panel, Inventario y Lotes)
-  useEffect(() => {
-    if (isOperator && (currentTab === 'clients' || currentTab === 'certificates' || currentTab === 'supabase')) {
-      setCurrentTab('dashboard');
-    }
-  }, [isOperator, currentTab]);
-
-  // Estados principales
-  const [materials, setMaterials] = useState<MaterialProduct[]>([]);
-  const [batches, setBatches] = useState<Batch[]>([]);
-  const [movements, setMovements] = useState<InventoryMovement[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
-  const [certificates, setCertificates] = useState<ValorizationCertificate[]>([]);
-  const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>([]);
-  const [repTargets, setRepTargets] = useState<RepTargetCompliance[]>([]);
-  const [metrics, setMetrics] = useState<KpiMetrics | null>(null);
-
-  // Modales prácticos industriales
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isWeighingModalOpen, setIsWeighingModalOpen] = useState(false);
-  const [isExcelSyncModalOpen, setIsExcelSyncModalOpen] = useState(false);
-  const [isNewMovementModalOpen, setIsNewMovementModalOpen] = useState(false);
-  const [isNewBatchModalOpen, setIsNewBatchModalOpen] = useState(false);
-  const [isNewCertModalOpen, setIsNewCertModalOpen] = useState(false);
-  const [filterCriticalInInventory, setFilterCriticalInInventory] = useState(false);
-
-  // Carga inicial
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [mats, bats, movs, whs, stks, certs, prod, rep, kpi] = await Promise.all([
-        apiService.getMaterials(),
-        apiService.getBatches(),
-        apiService.getMovements(),
-        apiService.getWarehouses(),
-        apiService.getStakeholders(),
-        apiService.getCertificates(),
-        apiService.getProductionOrders(),
-        apiService.getRepTargets(),
-        apiService.getKpiMetrics()
-      ]);
-
-      setMaterials(mats);
-      setBatches(bats);
-      setMovements(movs);
-      setWarehouses(whs);
-      setStakeholders(stks);
-      setCertificates(certs);
-      setProductionOrders(prod);
-      setRepTargets(rep);
-      setMetrics(kpi);
-    } catch (err) {
-      console.error('Error cargando datos de Greenspot:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Ctrl/Cmd+K abre y cierra la paleta de comandos
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen(o => !o);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
-  // Handlers: si falla, avisa y relanza para que el formulario quede abierto con sus datos
-  const run = async (action: () => Promise<unknown>, title: string, detail?: string) => {
-    try {
-      await action();
-      success(title, detail);
-    } catch (err: any) {
-      toastError('No se pudo guardar', err?.message || String(err));
-      throw err;
-    } finally {
-      await loadData();
-    }
-  };
-
-  const handleSaveMaterial = (newMat: Omit<MaterialProduct, 'id' | 'created_at' | 'updated_at'>) =>
-    run(() => apiService.createMaterial(newMat), 'Material registrado con éxito', `${newMat.name} agregado al catálogo`);
-
-  // El ajuste físico queda en el kardex como entrada o merma, no como sobrescritura del stock
-  const handleUpdateStock = (id: string, newStock: number) => {
-    const mat = materials.find(m => m.id === id);
-    const delta = mat ? newStock - mat.current_stock : 0;
-    if (!mat || delta === 0) return Promise.resolve();
-    return run(() => apiService.recordMovement({
-      movement_number: `AJU-${Date.now()}`,
-      movement_type: delta > 0 ? 'reception' : 'waste_adjustment',
-      material_id: id,
-      batch_id: null,
-      from_warehouse_id: null,
-      to_warehouse_id: null,
-      quantity: Math.abs(delta),
-      unit: mat.unit,
-      operator_name: role === 'operator' ? 'Operario de planta' : 'Administrador',
-      reference_doc: 'Ajuste por conteo físico',
-      created_at: new Date().toISOString()
-    }), 'Inventario actualizado', 'Ajuste registrado en el kardex');
-  };
-
-  const handleSaveBatch = (newBatch: Omit<Batch, 'id' | 'created_at' | 'updated_at'>) =>
-    run(() => apiService.createBatch(newBatch), 'Lote recepcionado', `Lote ${newBatch.batch_number} ingresado con pesaje`);
-
-  const handleUpdateBatchStatus = (id: string, status: BatchStatus) =>
-    run(() => apiService.updateBatchStatus(id, status), 'Estado de lote actualizado', `Avanzado a: ${status}`);
-
-  const handleRecordMovement = (newMov: Omit<InventoryMovement, 'id'>) =>
-    run(async () => {
-      const mat = materials.find(m => m.id === newMov.material_id);
-      const sale = ['dispatch', 'production_intake', 'waste_adjustment', 'internal_transfer'].includes(newMov.movement_type);
-      if (sale && mat && newMov.quantity > mat.current_stock) {
-        throw new Error(`Stock insuficiente: hay ${mat.current_stock.toLocaleString('es-CL')} ${mat.unit} de ${mat.name}`);
-      }
-      return apiService.recordMovement(newMov);
-    },'Movimiento registrado en Kardex', `${newMov.movement_number} - Balance actualizado`);
-
-  const handleSaveStakeholder = (newStk: Omit<Stakeholder, 'id' | 'created_at'>) =>
-    run(() => apiService.createStakeholder(newStk), 'Empresa registrada', `${newStk.name} incorporada a la red de trazabilidad`);
-
-  const handleSaveCertificate = (newCert: Omit<ValorizationCertificate, 'id' | 'created_at'>) =>
-    run(() => apiService.createCertificate(newCert), 'Certificado REP emitido', `${newCert.certificate_code} acreditado`);
-
-  const handleUpdateMaterial = (id: string, updates: Partial<MaterialProduct>) =>
-    run(() => apiService.updateMaterial(id, updates), 'Material actualizado', 'Ficha técnica y parámetros guardados');
-
-  const handleUpdateBatch = (id: string, updates: Partial<Batch>) =>
-    run(() => apiService.updateBatch(id, updates), 'Lote actualizado', 'Pesaje y datos de transporte modificados');
-
-  const handleUpdateStakeholder = (id: string, updates: Partial<Stakeholder>) =>
-    run(() => apiService.updateStakeholder(id, updates), 'Empresa actualizada', 'Datos del cliente/proveedor guardados');
-
-  const handleDeleteStakeholder = (id: string) =>
-    run(() => apiService.deleteStakeholder(id), 'Empresa eliminada', 'El cliente fue removido de la base de datos');
-
-  const handleDeleteBatch = (id: string) =>
-    run(() => apiService.deleteBatch(id), 'Lote eliminado', 'El lote fue removido de trazabilidad');
-
-  const handleDeleteMaterial = (id: string) =>
-    run(() => apiService.deleteMaterial(id), 'Material eliminado', 'El producto fue removido del inventario');
-
-  // Handlers para Importación Masiva desde Excel Nativo (.xlsx)
-  const handleImportMaterials = async (importedMaterials: any[]) => {
-    for (const mat of importedMaterials) {
-      // Si el material ya existe por código, actualizamos su stock, si no lo creamos
-      const existing = materials.find(m => m.code.toUpperCase() === mat.code.toUpperCase());
-      if (existing) {
-        await apiService.updateMaterial(existing.id, {
-          current_stock: mat.current_stock,
-          unit_cost_usd: mat.unit_cost_usd,
-          unit_price_usd: mat.unit_price_usd
-        });
-      } else {
-        await apiService.createMaterial(mat);
-      }
-    }
-    await loadData();
-  };
-
-  const handleImportBatches = async (importedBatches: any[]) => {
-    for (const b of importedBatches) {
-      // Buscar material y proveedor por nombre o código
-      const matchedMat = materials.find(m => 
-        m.code.toLowerCase() === b.material_identifier.toLowerCase() ||
-        m.name.toLowerCase().includes(b.material_identifier.toLowerCase())
-      ) || materials[0];
-
-      const matchedStk = stakeholders.find(s => 
-        s.tax_id.replace(/\./g, '').replace(/-/g, '') === b.supplier_tax_id.replace(/\./g, '').replace(/-/g, '')
-      ) || stakeholders[0];
-
-      await apiService.createBatch({
-        batch_number: b.batch_number,
-        material_id: matchedMat ? matchedMat.id : materials[0].id,
-        supplier_id: matchedStk ? matchedStk.id : undefined,
-        warehouse_id: warehouses[0]?.id || undefined,
-        initial_weight_kg: Number(b.net_weight),
-        current_weight_kg: Number(b.net_weight),
-        impurity_percentage: Number(b.impurity_percentage || 2.0),
-        reception_date: new Date().toISOString(),
-        status: 'received',
-        marine_origin_zone: b.marine_origin_zone || 'Centro Acuícola Patagonia',
-        notes: `Importado de Excel. Patente: ${b.truck_plate || 'N/A'}. Chofer: ${b.driver_name || 'N/A'}`
-      });
-    }
-    await loadData();
-  };
-
-  const handleApplyStockAdjustments = async (adjustments: { code: string; newStock: number }[]) => {
-    for (const adj of adjustments) {
-      const match = materials.find(m => 
-        m.code.toUpperCase() === adj.code.toUpperCase() || 
-        m.name.toUpperCase().includes(adj.code.toUpperCase())
-      );
-      if (match) {
-        await apiService.updateMaterial(match.id, { current_stock: adj.newStock });
-      }
-    }
-    await loadData();
-  };
-
-  const openNewMovement = () => {
-    setCurrentTab('movements');
-    setIsNewMovementModalOpen(true);
-  };
-
-  const handleViewInventoryWithAlerts = () => {
-    setFilterCriticalInInventory(true);
-    setCurrentTab('inventory');
-  };
-
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-800">
-      {/* Sidebar Limpio y Descansado (Fondo Claro, sin contraste pesado) */}
-      <Sidebar 
-        currentTab={currentTab} 
-        onSelectTab={(tab) => {
-          if (tab === 'inventory') setFilterCriticalInInventory(false);
-          setCurrentTab(tab);
-        }} 
-        metrics={metrics}
-        onOpenWeighing={() => setIsWeighingModalOpen(true)}
-        onOpenExcelSync={() => setIsExcelSyncModalOpen(true)}
-      />
-
-      {/* Contenido Principal */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-slate-50">
-        <Navbar 
-          onOpenSettings={() => setCurrentTab('supabase')}
-          onOpenWeighing={() => setIsWeighingModalOpen(true)}
-          onOpenExcelSync={() => setIsExcelSyncModalOpen(true)}
-          criticalAlertsCount={metrics?.criticalStockAlertsCount || 0}
-          onViewInventoryWithAlerts={handleViewInventoryWithAlerts}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        />
-
-        <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10">
-          {loading ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400">
-              <Loader2 className="w-6 h-6 animate-spin text-slate-600" />
-              <p className="text-sm font-semibold">Cargando inventario Greenspot...</p>
-            </div>
-          ) : (
-            <>
-              {currentTab === 'dashboard' && (
-                <DashboardView 
-                  metrics={metrics}
-                  materials={materials}
-                  batches={batches}
-                  movements={movements}
-                  onNavigate={(tab) => {
-                    if (tab === 'inventory') setFilterCriticalInInventory(false);
-                    setCurrentTab(tab);
-                  }}
-                  onOpenNewMovement={openNewMovement}
-                  onOpenWeighing={() => setIsWeighingModalOpen(true)}
-                  onOpenExcelSync={() => setIsExcelSyncModalOpen(true)}
-                  onUpdateBatchStatus={handleUpdateBatchStatus}
-                  onUpdateStock={handleUpdateStock}
-                />
-              )}
-
-              {currentTab === 'inventory' && (
-                <InventoryView 
-                  materials={materials}
-                  onSaveMaterial={handleSaveMaterial}
-                  onUpdateStock={handleUpdateStock}
-                  onUpdateMaterial={handleUpdateMaterial}
-                  onDeleteMaterial={handleDeleteMaterial}
-                  initialFilterCritical={filterCriticalInInventory}
-                />
-              )}
-
-              {currentTab === 'batches' && (
-                <BatchesView 
-                  batches={batches}
-                  materials={materials}
-                  stakeholders={stakeholders}
-                  warehouses={warehouses}
-                  onSaveBatch={handleSaveBatch}
-                  onUpdateStatus={handleUpdateBatchStatus}
-                  onUpdateBatch={handleUpdateBatch}
-                  onDeleteBatch={handleDeleteBatch}
-                  isNewBatchModalOpen={isNewBatchModalOpen}
-                  setIsNewBatchModalOpen={setIsNewBatchModalOpen}
-                />
-              )}
-
-              {currentTab === 'movements' && (
-                <MovementsView 
-                  movements={movements}
-                  materials={materials}
-                  warehouses={warehouses}
-                  batches={batches}
-                  onRecordMovement={handleRecordMovement}
-                  isNewMovementModalOpen={isNewMovementModalOpen}
-                  setIsNewMovementModalOpen={setIsNewMovementModalOpen}
-                />
-              )}
-
-              {currentTab === 'clients' && (
-                <ClientsView 
-                  stakeholders={stakeholders}
-                  onSaveStakeholder={handleSaveStakeholder}
-                  onUpdateStakeholder={handleUpdateStakeholder}
-                  onDeleteStakeholder={handleDeleteStakeholder}
-                />
-              )}
-
-              {currentTab === 'certificates' && (
-                <CertificatesView 
-                  certificates={certificates}
-                  stakeholders={stakeholders}
-                  batches={batches}
-                  onSaveCertificate={handleSaveCertificate}
-                  isNewCertModalOpen={isNewCertModalOpen}
-                  setIsNewCertModalOpen={setIsNewCertModalOpen}
-                />
-              )}
-
-              {currentTab === 'supabase' && (
-                <SupabaseSettingsView 
-                  onRefreshData={loadData}
-                />
-              )}
-            </>
-          )}
-        </main>
-      </div>
-
-      {/* Buscador Rápido de Inventario */}
-      <CommandPalette 
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        onSelectTab={(tab) => {
-          if (tab === 'inventory') setFilterCriticalInInventory(false);
-          setCurrentTab(tab);
-        }}
-        materials={materials}
-        batches={batches}
-        onOpenNewBatch={() => setIsWeighingModalOpen(true)}
-        onOpenNewMovement={openNewMovement}
-        onOpenNewCert={() => { setCurrentTab('certificates'); setIsNewCertModalOpen(true); }}
-        onOpenExcelSync={() => setIsExcelSyncModalOpen(true)}
-      />
-
-      {/* Calculadora & Pesaje de Báscula Industrial */}
-      <WeighingModal
-        isOpen={isWeighingModalOpen}
-        onClose={() => setIsWeighingModalOpen(false)}
-        materials={materials}
-        stakeholders={stakeholders}
-        warehouses={warehouses}
-        onSaveBatch={handleSaveBatch}
-      />
-
-      {/* Sincronización y Manipulación Nativa con Excel (.xlsx) */}
-      <ExcelSyncModal
-        isOpen={isExcelSyncModalOpen}
-        onClose={() => setIsExcelSyncModalOpen(false)}
-        data={{
-          materials,
-          batches,
-          movements,
-          productionOrders,
-          certificates
-        }}
-        onImportMaterials={handleImportMaterials}
-        onImportBatches={handleImportBatches}
-        onApplyStockAdjustments={handleApplyStockAdjustments}
-      />
-
-      {/* Modal Switcher de Roles y Acceso (IAM) */}
-      <RoleSwitcherModal />
+const CambioDlg: React.FC<{ cerrar: () => void }> = ({ cerrar }) => {
+  const { cuentas, cambiarA, setOtraCuenta } = useIAM();
+  const [elegida, setElegida] = useState<Cuenta | null>(null);
+  if (elegida) return <div className="dlg"><PinCambio cuenta={elegida} cambiarA={cambiarA} onAtras={() => setElegida(null)} onListo={cerrar} /></div>;
+  return <div className="dlg">
+    <div className="dc"><small>Tu cuenta</small><h3>Cambiar de usuario</h3></div>
+    <div className="db">
+      {cuentas.length ? <div className="opciones">{cuentas.map(c => (
+        <button key={c.id} className="opcion" onClick={() => setElegida(c)}><span>{c.nombre}<span className="desc">{c.rol === 'admin' ? 'Administración' : 'Operario'}</span></span><small>PIN</small></button>
+      ))}</div> : <p className="sec">Todavía no hay otras cuentas en este equipo. Entra una vez con la contraseña de la otra persona; desde ahí se cambia con su PIN.</p>}
     </div>
-  );
-}
+    <div className="dp"><button className="btn" onClick={cerrar}>Cancelar</button><button className="btn" onClick={() => { cerrar(); setOtraCuenta(true); }}>Entrar con otra cuenta</button></div>
+  </div>;
+};
 
-export default function App() {
-  return (
-    <ToastProvider>
-      <IAMProvider>
-        <AppContent />
-      </IAMProvider>
-    </ToastProvider>
+const MiPinDlg: React.FC<{ cerrar: () => void; aviso: (t: string) => void }> = ({ cerrar, aviso }) => {
+  const [a, setA] = useState(''), [b, setB] = useState(''), [error, setError] = useState(''), [enviando, setEnviando] = useState(false);
+  const solo = (f: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => f(e.target.value.replace(/\D/g, '').slice(0, 4));
+  const ok = a.length === 4 && a === b;
+  const guardar = async () => {
+    if (!ok || enviando) return;
+    setEnviando(true);
+    try { await apiService.setMyPin(a); cerrar(); aviso('PIN guardado. Ya puedes volver a esta cuenta con él.'); }
+    catch (e) { setError((e as Error).message); setEnviando(false); }
+  };
+  return <div className="dlg" onKeyDown={e => e.key === 'Enter' && guardar()}>
+    <div className="dc"><small>Tu cuenta</small><h3>Crear o cambiar PIN</h3></div>
+    <div className="db">
+      <div className="fila2">
+        <div className="campo"><label htmlFor="p1">PIN nuevo</label><input id="p1" className="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus value={a} onChange={solo(setA)} /></div>
+        <div className={'campo' + (b.length === 4 && a !== b ? ' mal' : '')}><label htmlFor="p2">Repítelo</label><input id="p2" className="pin" type="password" inputMode="numeric" autoComplete="off" value={b} onChange={solo(setB)} />
+          <div className="ayuda">{b.length === 4 && a !== b ? 'No coinciden.' : ''}</div></div>
+      </div>
+      <p className="nota">4 números. Sirve para volver a esta cuenta desde «Cambiar de usuario» sin escribir la contraseña.</p>
+      {error && <div className="resultado mal"><span>{error}</span></div>}
+    </div>
+    <div className="dp"><button className="btn" onClick={cerrar}>Cancelar</button><button className="btn pri" disabled={!ok || enviando} onClick={guardar}>Guardar PIN</button></div>
+  </div>;
+};
+
+const Principal: React.FC = () => {
+  const iam = useIAM(), { user, isAdmin, realRole, verComoOperario } = iam;
+  const [D, setD] = useState<Datos>(VACIO), [cargado, setCargado] = useState(false), [errorCarga, setErrorCarga] = useState('');
+  const [vista, setVista] = useState<Vista>('inicio'), [panel, setPanel] = useState<PanelSel>(null), [dlg, setDlg] = useState<DlgSel>(null);
+  const [menu, setMenu] = useState(false), [lado, setLado] = useState(false), [avisoTxt, setAvisoTxt] = useState(''), [avisoOn, setAvisoOn] = useState(false);
+  const temp = useRef<number>();
+
+  const aviso = useCallback((t: string) => {
+    setAvisoTxt(t); setAvisoOn(true); clearTimeout(temp.current);
+    temp.current = window.setTimeout(() => setAvisoOn(false), 3200);
+  }, []);
+
+  const recargar = useCallback(async () => {
+    try {
+      const [mat, lotes, mov, bod, emp, cert, stock, usuarios] = await Promise.all([
+        apiService.getMaterials(), apiService.getBatches(), apiService.getMovements(), apiService.getWarehouses(), apiService.getStakeholders(),
+        apiService.getCertificates(), apiService.getStock(), realRole === 'admin' ? apiService.getProfiles() : Promise.resolve([])
+      ]);
+      setD({ mat, lotes, mov, bod, emp, cert, stock, usuarios }); setErrorCarga('');
+    } catch (e) { setErrorCarga((e as Error).message); }
+    finally { setCargado(true); }
+  }, [realRole]);
+
+  // Al cambiar de cuenta se recarga en silencio: la pantalla abierta se mantiene.
+  useEffect(() => { recargar(); }, [user.id, recargar]);
+  useEffect(() => { setPanel(null); setDlg(null); setMenu(false); }, [user.id]);
+  useEffect(() => { if (!isAdmin && ADMIN.includes(vista)) setVista('inicio'); }, [isAdmin, vista]);
+
+  const ir = (v: Vista) => { setVista(v); setPanel(null); setLado(false); };
+  const ctx: Ctx = { D, esAdmin: isAdmin, usuario: user.name, uid: user.id, recargar, aviso, setPanel, setDlg, ir };
+  const nav = (v: Vista, t: string, cnt?: number) => (
+    <button key={v} className={'nav' + (vista === v ? ' on' : '')} onClick={() => ir(v)}><Ico n={v} />{t}{!!cnt && <span className="cnt">{cnt}</span>}</button>
   );
-}
+  const V = VISTAS[vista], cerrarDlg = () => setDlg(null);
+
+  return (
+    <AppCtx.Provider value={ctx}>
+      <div className="raiz" onMouseDown={e => { if (menu && !(e.target as HTMLElement).closest('.menuU, .usuario')) setMenu(false); }}>
+        <header className="cab">
+          <button className="hamb" aria-label="Menú" onClick={() => setLado(!lado)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+          <div className="marca"><i>G</i>Greenspot</div>
+          <div className="planta opc">Planta Dalcahue</div>
+          <span className="sp" />
+          <button className="usuario" title="Tu cuenta" onClick={() => setMenu(!menu)}>
+            <span className="opc"><b>{user.name}</b> · {isAdmin ? 'Administración' : 'Operario'}</span><div className="inic">{user.initials}</div>
+          </button>
+        </header>
+        <div className={'franja' + (verComoOperario ? ' on' : '')}>Estás viendo la app como operario.<button onClick={() => iam.setVerComoOperario(false)}>Volver a administración</button></div>
+        <div className="app">
+          <nav className={'lado' + (lado ? ' abierto' : '')}>
+            <div className="grupo">Planta</div>
+            {nav('inicio', 'Inicio')}{nav('lotes', 'Lotes', D.lotes.filter(enProceso).length)}{nav('mat', 'Materiales')}{nav('mov', 'Movimientos')}
+            {isAdmin && <><div className="grupo">Administración</div>{nav('emp', 'Empresas')}{nav('cert', 'Certificados', sinCert(D).length)}{nav('rep', 'Reportes')}{nav('conf', 'Configuración')}</>}
+          </nav>
+          <main className="cuerpo">
+            {errorCarga ? <div className="resultado mal"><span>No se pudieron cargar los datos: {errorCarga}</span><button className="btn chico" onClick={recargar}>Reintentar</button></div>
+              : !cargado ? <div className="cargando">Cargando…</div> : <V />}
+          </main>
+        </div>
+
+        <aside className={'panel' + (panel ? ' on' : '')}><Panel sel={panel} /></aside>
+
+        <div className={'velo' + (dlg ? ' on' : '')} onMouseDown={e => { if (e.target === e.currentTarget) cerrarDlg(); }}>
+          {dlg?.t === 'flujo' && <FlujoDlg key={dlg.f + (dlg.pre || '')} f={dlg.f} pre={dlg.pre} />}
+          {dlg?.t === 'form' && (dlg.nombre === 'empresa' ? <FormEmpresa key={dlg.id || 'nueva'} id={dlg.id} /> : <FormMaterial />)}
+          {dlg?.t === 'cambio' && <CambioDlg cerrar={cerrarDlg} />}
+          {dlg?.t === 'ajuste' && <AjusteDlg key={dlg.id + dlg.modo} id={dlg.id} modo={dlg.modo} />}
+          {dlg?.t === 'mipin' && <MiPinDlg cerrar={cerrarDlg} aviso={aviso} />}
+        </div>
+
+        <div className={'menuU' + (menu ? ' on' : '')}>
+          <div className="yo"><b>{user.name}</b><small>{user.email}</small></div>
+          {realRole === 'admin' && <button onClick={() => { iam.setVerComoOperario(!verComoOperario); setMenu(false); }}>{verComoOperario ? 'Volver a administración' : 'Ver como operario'}</button>}
+          <button onClick={() => { setDlg({ t: 'cambio' }); setMenu(false); }}>Cambiar de usuario</button>
+          <button onClick={() => { setDlg({ t: 'mipin' }); setMenu(false); }}>Crear o cambiar PIN</button>
+          <hr />
+          <button onClick={() => { setMenu(false); iam.signOut(); }}>Cerrar sesión</button>
+        </div>
+
+        <div className={'aviso' + (avisoOn ? ' on' : '')} role="status">{avisoTxt}</div>
+      </div>
+    </AppCtx.Provider>
+  );
+};
+
+const App: React.FC = () => (
+  <IAMProvider login={(cuentas, cambiarA, cancelar) => <LoginView cuentas={cuentas} cambiarA={cambiarA} cancelar={cancelar} />}>
+    <Principal />
+  </IAMProvider>
+);
+
+export default App;
