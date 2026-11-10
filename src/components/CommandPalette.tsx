@@ -8,7 +8,6 @@ import {
   Users2, 
   FileCheck2, 
   Database, 
-  Cog, 
   Target, 
   PlusCircle, 
   ArrowRight,
@@ -29,7 +28,6 @@ interface CommandPaletteProps {
   onOpenNewBatch: () => void;
   onOpenNewMovement: () => void;
   onOpenNewCert: () => void;
-  onOpenNewProduction?: () => void;
   onOpenExcelSync?: () => void;
 }
 
@@ -42,7 +40,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenNewBatch,
   onOpenNewMovement,
   onOpenNewCert,
-  onOpenNewProduction,
   onOpenExcelSync
 }) => {
   const [query, setQuery] = useState('');
@@ -58,10 +55,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        if (isOpen) onClose();
-      }
       if (e.key === 'Escape' && isOpen) {
         onClose();
       }
@@ -86,7 +79,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { label: 'Pesaje de Camión en Romana', action: () => { onClose(); onOpenNewBatch(); }, icon: Scale, visible: permissions.canWeighTrucks },
     { label: 'Registrar Movimiento en Kardex', action: () => { onClose(); onOpenNewMovement(); }, icon: PlusCircle, visible: permissions.canRecordMovements },
     { label: 'Emitir Certificado Ley REP', action: () => { onClose(); onOpenNewCert(); }, icon: PlusCircle, visible: permissions.canIssueCertificates },
-    { label: 'Nueva Orden de Producción', action: () => { onClose(); onOpenNewProduction?.(); }, icon: Cog, visible: permissions.canRecordMovements },
   ];
 
   const filteredNav = allNavItems

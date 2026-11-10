@@ -9,7 +9,8 @@ import {
   Scale,
   FileSpreadsheet,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  ArrowLeftRight
 } from 'lucide-react';
 import { KpiMetrics } from '../types';
 import { useIAM } from '../context/IAMContext';
@@ -18,6 +19,7 @@ export type TabType =
   | 'dashboard' 
   | 'inventory' 
   | 'batches' 
+  | 'movements'
   | 'clients'
   | 'certificates' 
   | 'supabase';
@@ -43,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Panel Principal', icon: LayoutDashboard, visible: true },
     { id: 'inventory', label: 'Inventario & Silos', icon: Boxes, visible: true },
     { id: 'batches', label: 'Lotes & Trazabilidad', icon: Layers, badge: metrics?.activeBatchesCount, visible: true },
+    { id: 'movements', label: 'Movimientos (Kardex)', icon: ArrowLeftRight, visible: permissions.canRecordMovements },
     { id: 'clients', label: 'Clientes & Empresas', icon: Building2, visible: permissions.canViewClients },
     { id: 'certificates', label: 'Certificados Ley REP', icon: FileCheck2, visible: permissions.canIssueCertificates },
     { id: 'supabase', label: 'Configuración & BD', icon: Database, visible: permissions.canAccessDatabaseSettings },

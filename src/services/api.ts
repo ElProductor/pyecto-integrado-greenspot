@@ -51,20 +51,21 @@ function setLocal<T>(key: string, data: T): void {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
+// Con Supabase configurado los errores se lanzan para que la UI los muestre;
+// antes se escondían y el dato quedaba solo en el navegador.
+async function q<T>(req: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
+  const { data, error } = await req;
+  if (error) throw new Error(error.message);
+  return data as T;
+}
+
 export const apiService = {
   // -------------------------------------------------------------
   // BODEGAS / ALMACENES
   // -------------------------------------------------------------
   async getWarehouses(): Promise<Warehouse[]> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('warehouses').select('*').order('name');
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase getWarehouses, usando local:', e);
-      }
-    }
+    if (supabase) return q(supabase.from('warehouses').select('*').order('name'));
     return getLocal<Warehouse[]>(KEY_WAREHOUSES, INITIAL_WAREHOUSES);
   },
 
@@ -73,14 +74,7 @@ export const apiService = {
   // -------------------------------------------------------------
   async getStakeholders(): Promise<Stakeholder[]> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('stakeholders').select('*').order('name');
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase getStakeholders, usando local:', e);
-      }
-    }
+    if (supabase) return q(supabase.from('stakeholders').select('*').order('name'));
     return getLocal<Stakeholder[]>(KEY_STAKEHOLDERS, INITIAL_STAKEHOLDERS);
   },
 
@@ -92,14 +86,7 @@ export const apiService = {
     };
 
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('stakeholders').insert(newItem).select().single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase createStakeholder:', e);
-      }
-    }
+    if (supabase) return q(supabase.from('stakeholders').insert(newItem).select().single());
 
     const current = getLocal<Stakeholder[]>(KEY_STAKEHOLDERS, INITIAL_STAKEHOLDERS);
     const updated = [newItem, ...current];
@@ -109,19 +96,12 @@ export const apiService = {
 
   async updateStakeholder(id: string, updates: Partial<Stakeholder>): Promise<Stakeholder | null> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
+    if (supabase) return q(supabase
           .from('stakeholders')
           .update(updates)
           .eq('id', id)
           .select()
-          .single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase updateStakeholder:', e);
-      }
-    }
+          .single());
 
     const current = getLocal<Stakeholder[]>(KEY_STAKEHOLDERS, INITIAL_STAKEHOLDERS);
     const index = current.findIndex(s => s.id === id);
@@ -133,14 +113,7 @@ export const apiService = {
 
   async deleteStakeholder(id: string): Promise<boolean> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('stakeholders').delete().eq('id', id);
-        if (error) console.warn('Fallo Supabase deleteStakeholder:', error);
-      } catch (e) {
-        console.warn('Fallo Supabase deleteStakeholder:', e);
-      }
-    }
+    if (supabase) { await q(supabase.from('stakeholders').delete().eq('id', id)); return true; }
 
     const current = getLocal<Stakeholder[]>(KEY_STAKEHOLDERS, INITIAL_STAKEHOLDERS);
     const filtered = current.filter(s => s.id !== id);
@@ -153,14 +126,7 @@ export const apiService = {
   // -------------------------------------------------------------
   async getMaterials(): Promise<MaterialProduct[]> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('materials_and_products').select('*').order('name');
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase getMaterials, usando local:', e);
-      }
-    }
+    if (supabase) return q(supabase.from('materials_and_products').select('*').order('name'));
     return getLocal<MaterialProduct[]>(KEY_MATERIALS, INITIAL_MATERIALS);
   },
 
@@ -173,14 +139,7 @@ export const apiService = {
     };
 
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('materials_and_products').insert(newItem).select().single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase createMaterial:', e);
-      }
-    }
+    if (supabase) return q(supabase.from('materials_and_products').insert(newItem).select().single());
 
     const current = getLocal<MaterialProduct[]>(KEY_MATERIALS, INITIAL_MATERIALS);
     const updated = [newItem, ...current];
@@ -190,19 +149,12 @@ export const apiService = {
 
   async updateMaterial(id: string, updates: Partial<MaterialProduct>): Promise<MaterialProduct | null> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
+    if (supabase) return q(supabase
           .from('materials_and_products')
           .update({ ...updates, updated_at: new Date().toISOString() })
           .eq('id', id)
           .select()
-          .single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase updateMaterial:', e);
-      }
-    }
+          .single());
 
     const current = getLocal<MaterialProduct[]>(KEY_MATERIALS, INITIAL_MATERIALS);
     const index = current.findIndex(m => m.id === id);
@@ -214,14 +166,7 @@ export const apiService = {
 
   async deleteMaterial(id: string): Promise<boolean> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('materials_and_products').delete().eq('id', id);
-        if (error) console.warn('Fallo Supabase deleteMaterial:', error);
-      } catch (e) {
-        console.warn('Fallo Supabase deleteMaterial:', e);
-      }
-    }
+    if (supabase) { await q(supabase.from('materials_and_products').delete().eq('id', id)); return true; }
 
     const current = getLocal<MaterialProduct[]>(KEY_MATERIALS, INITIAL_MATERIALS);
     const filtered = current.filter(m => m.id !== id);
@@ -234,17 +179,10 @@ export const apiService = {
   // -------------------------------------------------------------
   async getBatches(): Promise<Batch[]> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
+    if (supabase) return q(supabase
           .from('batches')
           .select('*, material:materials_and_products(*), supplier:stakeholders(*), warehouse:warehouses(*)')
-          .order('reception_date', { ascending: false });
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase getBatches, usando local:', e);
-      }
-    }
+          .order('reception_date', { ascending: false }));
 
     const batches = getLocal<Batch[]>(KEY_BATCHES, INITIAL_BATCHES);
     const materials = getLocal<MaterialProduct[]>(KEY_MATERIALS, INITIAL_MATERIALS);
@@ -269,21 +207,14 @@ export const apiService = {
 
     const supabase = getSupabase();
     if (supabase) {
-      try {
-        const { data, error } = await supabase.from('batches').insert(newItem).select().single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase createBatch:', e);
-      }
+      await q(supabase.from('batches').insert(newItem));
+    } else {
+      setLocal(KEY_BATCHES, [newItem, ...getLocal<Batch[]>(KEY_BATCHES, INITIAL_BATCHES)]);
     }
-
-    const current = getLocal<Batch[]>(KEY_BATCHES, INITIAL_BATCHES);
-    const updated = [newItem, ...current];
-    setLocal(KEY_BATCHES, updated);
 
     // Registra movimiento de recepción automática
     await this.recordMovement({
-      movement_number: `MOV-${Date.now().toString().slice(-4)}`,
+      movement_number: `MOV-${Date.now()}`,
       movement_type: 'reception',
       material_id: newItem.material_id,
       batch_id: newItem.id,
@@ -304,11 +235,8 @@ export const apiService = {
   async updateBatchStatus(id: string, status: Batch['status']): Promise<void> {
     const supabase = getSupabase();
     if (supabase) {
-      try {
-        await supabase.from('batches').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
-      } catch (e) {
-        console.warn('Fallo Supabase updateBatchStatus:', e);
-      }
+      await q(supabase.from('batches').update({ status, updated_at: new Date().toISOString() }).eq('id', id));
+      return;
     }
 
     const current = getLocal<Batch[]>(KEY_BATCHES, INITIAL_BATCHES);
@@ -322,19 +250,12 @@ export const apiService = {
 
   async updateBatch(id: string, updates: Partial<Batch>): Promise<Batch | null> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
+    if (supabase) return q(supabase
           .from('batches')
           .update({ ...updates, updated_at: new Date().toISOString() })
           .eq('id', id)
           .select()
-          .single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase updateBatch:', e);
-      }
-    }
+          .single());
 
     const current = getLocal<Batch[]>(KEY_BATCHES, INITIAL_BATCHES);
     const index = current.findIndex(b => b.id === id);
@@ -346,14 +267,7 @@ export const apiService = {
 
   async deleteBatch(id: string): Promise<boolean> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('batches').delete().eq('id', id);
-        if (error) console.warn('Fallo Supabase deleteBatch:', error);
-      } catch (e) {
-        console.warn('Fallo Supabase deleteBatch:', e);
-      }
-    }
+    if (supabase) { await q(supabase.from('batches').delete().eq('id', id)); return true; }
 
     const current = getLocal<Batch[]>(KEY_BATCHES, INITIAL_BATCHES);
     const filtered = current.filter(b => b.id !== id);
@@ -366,17 +280,10 @@ export const apiService = {
   // -------------------------------------------------------------
   async getMovements(): Promise<InventoryMovement[]> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
+    if (supabase) return q(supabase
           .from('inventory_movements')
           .select('*, material:materials_and_products(*), batch:batches(*), from_warehouse:warehouses!from_warehouse_id(*), to_warehouse:warehouses!to_warehouse_id(*)')
-          .order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase getMovements, usando local:', e);
-      }
-    }
+          .order('created_at', { ascending: false }));
 
     const movements = getLocal<InventoryMovement[]>(KEY_MOVEMENTS, INITIAL_MOVEMENTS);
     const materials = getLocal<MaterialProduct[]>(KEY_MATERIALS, INITIAL_MATERIALS);
@@ -399,14 +306,7 @@ export const apiService = {
     };
 
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('inventory_movements').insert(newItem).select().single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase recordMovement:', e);
-      }
-    }
+    if (supabase) return q(supabase.from('inventory_movements').insert(newItem).select().single());
 
     // Actualización local de Kardex y Stock
     const movements = getLocal<InventoryMovement[]>(KEY_MOVEMENTS, INITIAL_MOVEMENTS);
@@ -436,17 +336,10 @@ export const apiService = {
   // -------------------------------------------------------------
   async getCertificates(): Promise<ValorizationCertificate[]> {
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
+    if (supabase) return q(supabase
           .from('valorization_certificates')
           .select('*, stakeholder:stakeholders(*), batch:batches(*)')
-          .order('issue_date', { ascending: false });
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase getCertificates, usando local:', e);
-      }
-    }
+          .order('issue_date', { ascending: false }));
 
     const certs = getLocal<ValorizationCertificate[]>(KEY_CERTS, INITIAL_CERTIFICATES);
     const stakeholders = getLocal<Stakeholder[]>(KEY_STAKEHOLDERS, INITIAL_STAKEHOLDERS);
@@ -467,14 +360,7 @@ export const apiService = {
     };
 
     const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('valorization_certificates').insert(newItem).select().single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Fallo Supabase createCertificate:', e);
-      }
-    }
+    if (supabase) return q(supabase.from('valorization_certificates').insert(newItem).select().single());
 
     const current = getLocal<ValorizationCertificate[]>(KEY_CERTS, INITIAL_CERTIFICATES);
     setLocal(KEY_CERTS, [newItem, ...current]);

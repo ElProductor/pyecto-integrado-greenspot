@@ -6,6 +6,7 @@ import { InventoryView } from './views/InventoryView';
 import { BatchesView } from './views/BatchesView';
 import { ClientsView } from './views/ClientsView';
 import { CertificatesView } from './views/CertificatesView';
+import { MovementsView } from './views/MovementsView';
 import { SupabaseSettingsView } from './views/SupabaseSettingsView';
 import { CommandPalette } from './components/CommandPalette';
 import { WeighingModal } from './components/WeighingModal';
@@ -60,7 +61,6 @@ function AppContent() {
   const [isNewMovementModalOpen, setIsNewMovementModalOpen] = useState(false);
   const [isNewBatchModalOpen, setIsNewBatchModalOpen] = useState(false);
   const [isNewCertModalOpen, setIsNewCertModalOpen] = useState(false);
-  const [isNewProductionModalOpen, setIsNewProductionModalOpen] = useState(false);
   const [filterCriticalInInventory, setFilterCriticalInInventory] = useState(false);
 
   // Carga inicial
@@ -99,89 +99,93 @@ function AppContent() {
     loadData();
   }, []);
 
-  // Handlers
-  const handleSaveMaterial = async (newMat: Omit<MaterialProduct, 'id' | 'created_at' | 'updated_at'>) => {
-    await apiService.createMaterial(newMat);
-    success('Material registrado con éxito', `${newMat.name} agregado al catálogo`);
-    await loadData();
+  // Ctrl/Cmd+K abre y cierra la paleta de comandos
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(o => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Handlers: si falla, avisa y relanza para que el formulario quede abierto con sus datos
+  const run = async (action: () => Promise<unknown>, title: string, detail?: string) => {
+    try {
+      await action();
+      success(title, detail);
+    } catch (err: any) {
+      toastError('No se pudo guardar', err?.message || String(err));
+      throw err;
+    } finally {
+      await loadData();
+    }
   };
 
-  const handleUpdateStock = async (id: string, newStock: number) => {
-    await apiService.updateMaterial(id, { current_stock: newStock });
-    success('Inventario actualizado');
-    await loadData();
+  const handleSaveMaterial = (newMat: Omit<MaterialProduct, 'id' | 'created_at' | 'updated_at'>) =>
+    run(() => apiService.createMaterial(newMat), 'Material registrado con éxito', `${newMat.name} agregado al catálogo`);
+
+  // El ajuste físico queda en el kardex como entrada o merma, no como sobrescritura del stock
+  const handleUpdateStock = (id: string, newStock: number) => {
+    const mat = materials.find(m => m.id === id);
+    const delta = mat ? newStock - mat.current_stock : 0;
+    if (!mat || delta === 0) return Promise.resolve();
+    return run(() => apiService.recordMovement({
+      movement_number: `AJU-${Date.now()}`,
+      movement_type: delta > 0 ? 'reception' : 'waste_adjustment',
+      material_id: id,
+      batch_id: null,
+      from_warehouse_id: null,
+      to_warehouse_id: null,
+      quantity: Math.abs(delta),
+      unit: mat.unit,
+      operator_name: role === 'operator' ? 'Operario de planta' : 'Administrador',
+      reference_doc: 'Ajuste por conteo físico',
+      created_at: new Date().toISOString()
+    }), 'Inventario actualizado', 'Ajuste registrado en el kardex');
   };
 
-  const handleSaveBatch = async (newBatch: Omit<Batch, 'id' | 'created_at' | 'updated_at'>) => {
-    await apiService.createBatch(newBatch);
-    success('Lote recepcionado', `Lote ${newBatch.batch_number} ingresado con pesaje`);
-    await loadData();
-  };
+  const handleSaveBatch = (newBatch: Omit<Batch, 'id' | 'created_at' | 'updated_at'>) =>
+    run(() => apiService.createBatch(newBatch), 'Lote recepcionado', `Lote ${newBatch.batch_number} ingresado con pesaje`);
 
-  const handleUpdateBatchStatus = async (id: string, status: BatchStatus) => {
-    await apiService.updateBatchStatus(id, status);
-    success('Estado de lote actualizado', `Avanzado a: ${status}`);
-    await loadData();
-  };
+  const handleUpdateBatchStatus = (id: string, status: BatchStatus) =>
+    run(() => apiService.updateBatchStatus(id, status), 'Estado de lote actualizado', `Avanzado a: ${status}`);
 
-  const handleRecordMovement = async (newMov: Omit<InventoryMovement, 'id'>) => {
-    await apiService.recordMovement(newMov);
-    success('Movimiento registrado en Kardex', `${newMov.movement_number} - Balance actualizado`);
-    await loadData();
-  };
+  const handleRecordMovement = (newMov: Omit<InventoryMovement, 'id'>) =>
+    run(async () => {
+      const mat = materials.find(m => m.id === newMov.material_id);
+      const sale = ['dispatch', 'production_intake', 'waste_adjustment', 'internal_transfer'].includes(newMov.movement_type);
+      if (sale && mat && newMov.quantity > mat.current_stock) {
+        throw new Error(`Stock insuficiente: hay ${mat.current_stock.toLocaleString('es-CL')} ${mat.unit} de ${mat.name}`);
+      }
+      return apiService.recordMovement(newMov);
+    },'Movimiento registrado en Kardex', `${newMov.movement_number} - Balance actualizado`);
 
-  const handleSaveStakeholder = async (newStk: Omit<Stakeholder, 'id' | 'created_at'>) => {
-    await apiService.createStakeholder(newStk);
-    success('Empresa registrada', `${newStk.name} incorporada a la red de trazabilidad`);
-    await loadData();
-  };
+  const handleSaveStakeholder = (newStk: Omit<Stakeholder, 'id' | 'created_at'>) =>
+    run(() => apiService.createStakeholder(newStk), 'Empresa registrada', `${newStk.name} incorporada a la red de trazabilidad`);
 
-  const handleSaveCertificate = async (newCert: Omit<ValorizationCertificate, 'id' | 'created_at'>) => {
-    await apiService.createCertificate(newCert);
-    success('Certificado REP emitido', `${newCert.certificate_code} acreditado`);
-    await loadData();
-  };
+  const handleSaveCertificate = (newCert: Omit<ValorizationCertificate, 'id' | 'created_at'>) =>
+    run(() => apiService.createCertificate(newCert), 'Certificado REP emitido', `${newCert.certificate_code} acreditado`);
 
-  const handleSaveProductionOrder = async (newOrder: Omit<ProductionOrder, 'id'>) => {
-    await apiService.createProductionOrder(newOrder);
-    await loadData();
-  };
+  const handleUpdateMaterial = (id: string, updates: Partial<MaterialProduct>) =>
+    run(() => apiService.updateMaterial(id, updates), 'Material actualizado', 'Ficha técnica y parámetros guardados');
 
-  const handleUpdateMaterial = async (id: string, updates: Partial<MaterialProduct>) => {
-    await apiService.updateMaterial(id, updates);
-    success('Material actualizado', 'Ficha técnica y parámetros guardados');
-    await loadData();
-  };
+  const handleUpdateBatch = (id: string, updates: Partial<Batch>) =>
+    run(() => apiService.updateBatch(id, updates), 'Lote actualizado', 'Pesaje y datos de transporte modificados');
 
-  const handleUpdateBatch = async (id: string, updates: Partial<Batch>) => {
-    await apiService.updateBatch(id, updates);
-    success('Lote actualizado', 'Pesaje y datos de transporte modificados');
-    await loadData();
-  };
+  const handleUpdateStakeholder = (id: string, updates: Partial<Stakeholder>) =>
+    run(() => apiService.updateStakeholder(id, updates), 'Empresa actualizada', 'Datos del cliente/proveedor guardados');
 
-  const handleUpdateStakeholder = async (id: string, updates: Partial<Stakeholder>) => {
-    await apiService.updateStakeholder(id, updates);
-    success('Empresa actualizada', 'Datos del cliente/proveedor guardados');
-    await loadData();
-  };
+  const handleDeleteStakeholder = (id: string) =>
+    run(() => apiService.deleteStakeholder(id), 'Empresa eliminada', 'El cliente fue removido de la base de datos');
 
-  const handleDeleteStakeholder = async (id: string) => {
-    await apiService.deleteStakeholder(id);
-    success('Empresa eliminada', 'El cliente fue removido de la base de datos');
-    await loadData();
-  };
+  const handleDeleteBatch = (id: string) =>
+    run(() => apiService.deleteBatch(id), 'Lote eliminado', 'El lote fue removido de trazabilidad');
 
-  const handleDeleteBatch = async (id: string) => {
-    await apiService.deleteBatch(id);
-    success('Lote eliminado', 'El lote fue removido de trazabilidad');
-    await loadData();
-  };
-
-  const handleDeleteMaterial = async (id: string) => {
-    await apiService.deleteMaterial(id);
-    success('Material eliminado', 'El producto fue removido del inventario');
-    await loadData();
-  };
+  const handleDeleteMaterial = (id: string) =>
+    run(() => apiService.deleteMaterial(id), 'Material eliminado', 'El producto fue removido del inventario');
 
   // Handlers para Importación Masiva desde Excel Nativo (.xlsx)
   const handleImportMaterials = async (importedMaterials: any[]) => {
@@ -243,6 +247,11 @@ function AppContent() {
     await loadData();
   };
 
+  const openNewMovement = () => {
+    setCurrentTab('movements');
+    setIsNewMovementModalOpen(true);
+  };
+
   const handleViewInventoryWithAlerts = () => {
     setFilterCriticalInInventory(true);
     setCurrentTab('inventory');
@@ -291,7 +300,7 @@ function AppContent() {
                     if (tab === 'inventory') setFilterCriticalInInventory(false);
                     setCurrentTab(tab);
                   }}
-                  onOpenNewMovement={() => setIsNewMovementModalOpen(true)}
+                  onOpenNewMovement={openNewMovement}
                   onOpenWeighing={() => setIsWeighingModalOpen(true)}
                   onOpenExcelSync={() => setIsExcelSyncModalOpen(true)}
                   onUpdateBatchStatus={handleUpdateBatchStatus}
@@ -322,6 +331,18 @@ function AppContent() {
                   onDeleteBatch={handleDeleteBatch}
                   isNewBatchModalOpen={isNewBatchModalOpen}
                   setIsNewBatchModalOpen={setIsNewBatchModalOpen}
+                />
+              )}
+
+              {currentTab === 'movements' && (
+                <MovementsView 
+                  movements={movements}
+                  materials={materials}
+                  warehouses={warehouses}
+                  batches={batches}
+                  onRecordMovement={handleRecordMovement}
+                  isNewMovementModalOpen={isNewMovementModalOpen}
+                  setIsNewMovementModalOpen={setIsNewMovementModalOpen}
                 />
               )}
 
@@ -366,9 +387,8 @@ function AppContent() {
         materials={materials}
         batches={batches}
         onOpenNewBatch={() => setIsWeighingModalOpen(true)}
-        onOpenNewMovement={() => setIsNewMovementModalOpen(true)}
-        onOpenNewCert={() => setIsNewCertModalOpen(true)}
-        onOpenNewProduction={() => setIsNewProductionModalOpen(true)}
+        onOpenNewMovement={openNewMovement}
+        onOpenNewCert={() => { setCurrentTab('certificates'); setIsNewCertModalOpen(true); }}
         onOpenExcelSync={() => setIsExcelSyncModalOpen(true)}
       />
 
