@@ -1,6 +1,6 @@
 # Greenspot · Inventario y trazabilidad
 
-Aplicación web para la planta de **Greenspot SpA** en Dalcahue, que recicla y valoriza plásticos de la acuicultura del sur de Chile: boyas y tuberías de HDPE, cajas de EPS, cabos y redes de PP.
+Aplicación web para la planta de **Greenspot SpA** , que recicla y valoriza plásticos de la acuicultura del sur de Chile: boyas y tuberías de HDPE, cajas de EPS, cabos y redes de PP.
 
 Registra lo que entra en camión, sigue cada lote por sus etapas de proceso (patio, lavado, molienda, pellet y despacho), controla el stock por bodega y emite los certificados de valorización para la **Ley REP (N° 20.920)**.
 
