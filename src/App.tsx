@@ -62,7 +62,7 @@ const Principal: React.FC = () => {
         <header className="cab">
           <button className="hamb" aria-label="Menú" onClick={() => setLado(!lado)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
           <div className="marca"><i>G</i>Greenspot</div>
-          <div className="planta opc">Planta Dalcahue</div>
+          <div className="planta opc">Planta Puerto Montt</div>
           <span className="sp" />
           <button className="usuario" title="Tu cuenta" onClick={() => setMenu(!menu)}>
             <span className="opc"><b>{user.name}</b> · {isAdmin ? 'Administración' : 'Operario'}</span><div className="inic">{user.initials}</div>
