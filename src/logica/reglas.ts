@@ -19,6 +19,10 @@ const orden = (w: Warehouse) => { const i = Object.keys(CORTO).indexOf(w.code); 
 export const bodegas = (D: Datos) => D.bod.filter(w => w.is_active !== false).sort((a, b) => orden(a) - orden(b));
 export const stockEn = (D: Datos, mat: string, bod: string) => Number(D.stock.find(s => s.material_id === mat && s.warehouse_id === bod)?.quantity || 0);
 export const bajoMinimo = (m: MaterialProduct) => Number(m.current_stock) < Number(m.minimum_stock);
+/** Bodegas con stock en kg sobre el 90 % de su capacidad (capacity_tons). */
+export const bodegasLlenas = (D: Datos) => bodegas(D).filter(b => Number(b.capacity_tons) > 0).map(b => ({ b,
+  kg: D.stock.filter(s => s.warehouse_id === b.id && D.mat.find(m => m.id === s.material_id)?.unit === 'kg').reduce((a, s) => a + Number(s.quantity), 0) }))
+  .filter(x => x.kg >= 0.9 * Number(x.b.capacity_tons) * 1000);
 export const kgEnPlanta = (D: Datos) => D.mat.filter(m => m.unit === 'kg').reduce((a, m) => a + Number(m.current_stock), 0);
 
 /* ---------- empresas ---------- */
@@ -55,7 +59,7 @@ export const MOTIVOS = ['Error de digitación', 'Registro duplicado', 'Solicitad
 export const ajusteDe = (m: InventoryMovement) => { const r = REF.exec(m.reference_doc || ''); return r ? { tipo: r[1] as 'Anula' | 'Corrige', num: r[2] } : null; };
 export const ajustesDe = (D: Datos, m: InventoryMovement) => D.mov.filter(x => ajusteDe(x)?.num === m.movement_number);
 export const anulado = (D: Datos, m: InventoryMovement) => ajustesDe(D, m).some(x => ajusteDe(x)!.tipo === 'Anula');
-const mismoSentido = (a: InventoryMovement, b: InventoryMovement) =>
+export const mismoSentido = (a: InventoryMovement, b: InventoryMovement) =>
   (a.from_warehouse_id || null) === (b.from_warehouse_id || null) && (a.to_warehouse_id || null) === (b.to_warehouse_id || null);
 /** Cantidad vigente: lo registrado más/menos las correcciones. */
 export const vigente = (D: Datos, m: InventoryMovement) => ajustesDe(D, m).filter(x => ajusteDe(x)!.tipo === 'Corrige')

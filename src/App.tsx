@@ -4,7 +4,6 @@ import { IAMProvider, useIAM } from './datos/sesion';
 import { Datos, Vista, PanelSel, DlgSel, Ctx, AppCtx } from './logica/contexto';
 import { enProceso, sinCert } from './logica/reglas';
 import { Ico } from './componentes/Comunes';
-import { CambioDlg, MiPinDlg } from './componentes/Cuenta';
 import { FlujoDlg } from './componentes/Flujos';
 import { FormEmpresa, FormMaterial } from './componentes/Formularios';
 import { AjusteDlg, Panel } from './componentes/Paneles';
@@ -87,16 +86,12 @@ const Principal: React.FC = () => {
         <div className={'velo' + (dlg ? ' on' : '')} onMouseDown={e => { if (e.target === e.currentTarget) cerrarDlg(); }}>
           {dlg?.t === 'flujo' && <FlujoDlg key={dlg.f + (dlg.pre || '')} f={dlg.f} pre={dlg.pre} />}
           {dlg?.t === 'form' && (dlg.nombre === 'empresa' ? <FormEmpresa key={dlg.id || 'nueva'} id={dlg.id} /> : <FormMaterial />)}
-          {dlg?.t === 'cambio' && <CambioDlg cerrar={cerrarDlg} />}
           {dlg?.t === 'ajuste' && <AjusteDlg key={dlg.id + dlg.modo} id={dlg.id} modo={dlg.modo} />}
-          {dlg?.t === 'mipin' && <MiPinDlg cerrar={cerrarDlg} aviso={aviso} />}
         </div>
 
         <div className={'menuU' + (menu ? ' on' : '')}>
           <div className="yo"><b>{user.name}</b><small>{user.email}</small></div>
           {realRole === 'admin' && <button onClick={() => { iam.setVerComoOperario(!verComoOperario); setMenu(false); }}>{verComoOperario ? 'Volver a administración' : 'Ver como operario'}</button>}
-          <button onClick={() => { setDlg({ t: 'cambio' }); setMenu(false); }}>Cambiar de usuario</button>
-          <button onClick={() => { setDlg({ t: 'mipin' }); setMenu(false); }}>Crear o cambiar PIN</button>
           <hr />
           <button onClick={() => { setMenu(false); iam.signOut(); }}>Cerrar sesión</button>
         </div>
@@ -108,7 +103,7 @@ const Principal: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <IAMProvider login={(cuentas, cambiarA, cancelar) => <Ingreso cuentas={cuentas} cambiarA={cambiarA} cancelar={cancelar} />}>
+  <IAMProvider login={<Ingreso />}>
     <Principal />
   </IAMProvider>
 );

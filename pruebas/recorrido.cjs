@@ -132,26 +132,13 @@ const comoAdmin = process.argv[2] !== 'op';
     check('vuelve a administración', (await body()).includes('Configuración'));
   }
 
-  // menú de usuario y cambio rápido
+  // menú de usuario: sin cambio rápido ni PIN, y sin sesiones de otras cuentas en el navegador
   await p.click('.usuario'); await w(200);
   await p.screenshot({ path: OUT + `/n-${comoAdmin ? 'adm' : 'op'}-menu.png` });
-  await clic('Crear o cambiar PIN'); await w(300);
-  await p.type('#p1', '1234'); await p.type('#p2', '1235'); await w(200);
-  check('PIN distintos bloquea', (await dlg()).includes('No coinciden') && await p.$eval('.velo.on .btn.pri', b => b.disabled));
-  await clic('Cancelar'); await w(200);
-  // Cuenta falsa guardada en este navegador: su sesión no sirve → error claro y la sesión actual sigue.
-  await p.evaluate(() => { const c = JSON.parse(localStorage.getItem('greenspot_cuentas') || '[]'); c.push({ id: '00000000-0000-0000-0000-00000000dead', email: 'otra@greenspot.cl', nombre: 'Cuenta Vencida', rol: 'admin', rt: 'token-falso' }); localStorage.setItem('greenspot_cuentas', JSON.stringify(c)); });
-  await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.cuerpo h1', { timeout: 30000 }); await w(300);
-  await p.click('.usuario'); await w(200); await clic('Cambiar de usuario'); await w(300);
-  check('lista otras cuentas', (await dlg()).includes('Cuenta Vencida'));
-  await clic('Cuenta Vencida'); await w(300); await p.type('#pin', '1234'); await p.waitForFunction(() => /venció|incorrecto/.test(document.querySelector('.velo.on .dlg')?.innerText || ''), { timeout: 20000 }).catch(() => {});
-  t = await dlg(); check('sesión vencida: aviso claro', t.includes('venció'));
-  await clic('Atrás'); await w(200);
-  check('cuenta vencida se quita de la lista', !(await dlg()).includes('Cuenta Vencida'));
-  await clic('Entrar con otra cuenta'); await w(400);
-  check('entrar con otra cuenta muestra ingreso con Cancelar', (await p.evaluate(() => document.querySelector('.ingreso')?.innerText || '')).includes('Cancelar'));
-  await clic('Cancelar'); await w(300);
-  check('cancelar vuelve a la app con la misma sesión', (await body()).includes('Carlos'));
+  t = await p.evaluate(() => document.querySelector('.menuU')?.innerText || '');
+  check('menú sin cambio rápido ni PIN', !/Cambiar de usuario|PIN/.test(t));
+  check('navegador no guarda otras cuentas', await p.evaluate(() => localStorage.getItem('greenspot_cuentas') === null));
+  await p.keyboard.press('Escape'); await w(200);
   await p.screenshot({ path: OUT + `/n-${comoAdmin ? 'adm' : 'op'}-final.png` });
 
   // celular

@@ -19,7 +19,7 @@ Está hecha con React, TypeScript y Vite. Los datos viven en Supabase (PostgreSQ
 | Empresas | Generadoras de residuo y clientes, con los kilos de cada una | Administración |
 | Certificados | Emisión y PDF con QR de verificación | Administración |
 | Reportes | Inventario, movimientos, lotes y certificados en Excel | Administración |
-| Configuración | Usuarios, roles, desactivar cuentas y reiniciar PIN | Administración |
+| Configuración | Usuarios, roles y desactivar cuentas | Administración |
 
 **Errores de registro.** Nada se borra: en la base, los movimientos solo se pueden agregar. Para un error se registra un asiento de contrapartida, como en un ERP:
 
@@ -28,7 +28,7 @@ Está hecha con React, TypeScript y Vite. Los datos viven en Supabase (PostgreSQ
 
 Ambos piden un motivo. El operario solo puede ajustar sus propios registros del mismo día; lo demás se lo pide a administración. Un lote que ya tiene certificado no se puede tocar.
 
-**Cuentas y PIN.** Cada persona entra la primera vez con su correo y contraseña. Después puede volver a su cuenta en el mismo equipo con un PIN de 4 números, desde «Cambiar de usuario».
+**Cuentas.** Cada persona entra con su correo y contraseña. En un equipo compartido se cierra sesión al terminar; el navegador no guarda sesiones de otras cuentas.
 
 ---
 
@@ -46,7 +46,6 @@ greenspot/
 │   │   ├── Paneles.tsx       Panel lateral de detalle y diálogo de anular/corregir
 │   │   ├── Flujos.tsx        Asistentes paso a paso: camión, salida, traslado, conteo, certificado
 │   │   ├── Formularios.tsx   Nueva empresa y nuevo material
-│   │   └── Cuenta.tsx        Cambiar de usuario y crear PIN
 │   ├── logica/
 │   │   ├── contexto.ts       Estado compartido de la app (datos cargados, panel, diálogo)
 │   │   ├── formato.ts        Números, kilos, fechas y RUT
@@ -55,12 +54,13 @@ greenspot/
 │   └── datos/
 │       ├── supabase.ts       Conexión
 │       ├── api.ts            Todas las lecturas y escrituras a la base
-│       ├── sesion.tsx        Inicio de sesión, roles y cambio rápido con PIN
+│       ├── sesion.tsx        Inicio de sesión y roles
 │       └── tipos.ts          Tipos de las tablas
 ├── supabase/                 Scripts de la base, en el orden en que se aplican
 │   ├── 001_esquema.sql
 │   ├── 002_datos_ejemplo.sql
-│   └── 003_usuarios_y_permisos.sql
+│   ├── 003_usuarios_y_permisos.sql
+│   └── 004_reglas_en_la_base.sql   Reglas de lotes, movimientos y certificados en la base
 ├── pruebas/                  Pruebas de punta a punta (no escriben en la base)
 └── .env.example              Plantilla de configuración
 ```
@@ -85,7 +85,7 @@ greenspot/
 
 ### Base de datos (proyecto nuevo)
 
-En Supabase › SQL Editor, ejecuta los tres scripts de `supabase/` en orden: 001, 002 y 003.
+En Supabase › SQL Editor, ejecuta los scripts de `supabase/` en orden: 001, 002, 003 y 004.
 
 El 002 carga bodegas, materiales y empresas de ejemplo. Los códigos de bodega (`BOD-PM-ACOPIO`, `BOD-PM-PLANTA`, …) los usa la app, así que si no cargas el 002, crea bodegas con esos mismos códigos.
 

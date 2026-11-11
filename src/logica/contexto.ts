@@ -8,8 +8,8 @@ export interface Datos {
 }
 export type Vista = 'inicio' | 'lotes' | 'mat' | 'mov' | 'emp' | 'cert' | 'rep' | 'conf';
 export type PanelSel = { t: 'lote' | 'mat' | 'emp' | 'cert' | 'usuario' | 'mov'; id: string } | null;
-export type Flujo = 'mov' | 'camion' | 'salida' | 'mover' | 'contar' | 'cert';
-export type DlgSel = { t: 'flujo'; f: Flujo; pre?: string } | { t: 'form'; nombre: 'empresa' | 'material'; id?: string } | { t: 'cambio' } | { t: 'mipin' } | { t: 'ajuste'; id: string; modo: 'anular' | 'corregir' } | null;
+export type Flujo = 'mov' | 'camion' | 'salida' | 'mover' | 'contar' | 'prod' | 'cert';
+export type DlgSel = { t: 'flujo'; f: Flujo; pre?: string } | { t: 'form'; nombre: 'empresa' | 'material'; id?: string } | { t: 'ajuste'; id: string; modo: 'anular' | 'corregir' } | null;
 
 export interface Ctx {
   D: Datos; esAdmin: boolean; usuario: string; uid: string;

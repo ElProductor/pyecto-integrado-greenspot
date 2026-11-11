@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { apiService } from '../datos/api';
+import { apiService, yaGuardado } from '../datos/api';
 import type { Stakeholder, MaterialProduct, Batch, InventoryMovement } from '../datos/tipos';
 import { generateCertificatePdf } from '../logica/certificadoPdf';
 import { PanelSel, useApp } from '../logica/contexto';
@@ -89,8 +89,10 @@ const PanelMov: React.FC<{ m: InventoryMovement }> = ({ m }) => {
       {m.notes && <><dt>{ori ? 'Motivo' : 'Notas'}</dt><dd>{m.notes}</dd></>}
       <dt>Registró</dt><dd>{m.operator_name} · {fecha(m.created_at)}</dd>
     </dl>
-    {orig && <p><button className="btn chico" onClick={() => c.setPanel({ t: 'mov', id: orig.id })}>Ver registro original</button></p>}
-    {m.batch_id && <p><button className="btn chico" onClick={() => c.setPanel({ t: 'lote', id: m.batch_id! })}>Ver lote</button></p>}
+    {(orig || m.batch_id) && <div className="acciones" style={{ marginTop: 16 }}>
+      {orig && <button className="btn chico" onClick={() => c.setPanel({ t: 'mov', id: orig.id })}>Ver registro original</button>}
+      {m.batch_id && <button className="btn chico" onClick={() => c.setPanel({ t: 'lote', id: m.batch_id! })}>Ver lote</button>}
+    </div>}
     {aj.length > 0 && <><h4>Historial</h4><div className="recorrido">{aj.map(x => (
       <div key={x.id} className="clic" style={{ display: 'block', cursor: 'pointer' }} onClick={() => c.setPanel({ t: 'mov', id: x.id })}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{ajusteDe(x)!.tipo === 'Anula' ? 'Anulado' : 'Corregido'} por {x.operator_name}</span><span>{fecha(x.created_at)}</span></div>
@@ -104,7 +106,7 @@ const PanelMov: React.FC<{ m: InventoryMovement }> = ({ m }) => {
 export const AjusteDlg: React.FC<{ id: string; modo: 'anular' | 'corregir' }> = ({ id, modo }) => {
   const c = useApp(), { D } = c, m = D.mov.find(x => x.id === id);
   const [motivo, setMotivo] = useState(modo === 'corregir' ? MOTIVOS[0] : ''), [detalle, setDetalle] = useState(''), [nueva, setNueva] = useState('');
-  const [error, setError] = useState(''), [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(''), [enviando, setEnviando] = useState(false), [clave] = useState(() => Date.now());
   if (!m) return null;
   const u = m.unit, actual = vigente(D, m), lote = m.movement_type === 'reception' && m.batch_id ? D.lotes.find(l => l.id === m.batch_id) : undefined;
   const n = modo === 'anular' ? 0 : +nueva, dif = n - actual;
@@ -119,19 +121,17 @@ export const AjusteDlg: React.FC<{ id: string; modo: 'anular' | 'corregir' }> = 
     const texto = motivo + (detalle.trim() ? ': ' + detalle.trim() : '');
     try {
       await apiService.recordMovement({
-        movement_number: `${modo === 'anular' ? 'ANU' : 'COR'}-${Date.now()}`, material_id: m.material_id, batch_id: m.batch_id || null, ...ct,
+        movement_number: `${modo === 'anular' ? 'ANU' : 'COR'}-${clave}`, material_id: m.material_id, batch_id: m.batch_id || null, ...ct,
         quantity: q, unit: u, operator_name: c.usuario, reference_doc: `${modo === 'anular' ? 'Anula' : 'Corrige'} ${m.movement_number}`,
         notes: modo === 'corregir' ? `${cant(actual, u)} → ${cant(n, u)} · ${texto}` : texto, created_at: new Date().toISOString()
       });
-      // shortcut: movimiento y lote van en dos llamadas; si la segunda falla, el aviso lo dice y se reintenta corrigiendo el lote. Pasar a una función SQL si molesta.
-      if (lote) await apiService.updateBatch(lote.id, modo === 'anular'
-        ? { current_weight_kg: 0, notes: `[ANULADO] ${texto} · ${c.usuario}, ${new Date().toLocaleDateString('es-CL')}${lote.notes ? ' · ' + lote.notes : ''}` }
-        : { initial_weight_kg: Number(lote.initial_weight_kg) + dif, current_weight_kg: Math.max(0, Number(lote.current_weight_kg) + dif) });
+      // El lote (peso o marca [ANULADO]) lo ajusta la base en la misma operación: supabase/004_reglas_en_la_base.sql
       await c.recargar(); c.setDlg(null);
       c.aviso(modo === 'anular' ? `${lote ? lote.batch_number : 'Registro'} anulado. El stock volvió a como estaba.` : `Corregido: ${cant(actual, u)} → ${cant(n, u)}`);
     } catch (e) {
+      if (yaGuardado(e, 'movement_number')) { await c.recargar(); c.setDlg(null); c.aviso('Ya estaba guardado: el intento anterior alcanzó a llegar.'); return; }
       const t = (e as Error).message;
-      setError(/Stock insuficiente/.test(t) ? `No alcanza el stock para deshacerlo: parte de ese material ya salió o se trasladó. ${t}.` : t);
+      setError(/stock suficiente/i.test(t) ? 'No alcanza el stock para deshacerlo: parte de ese material ya salió o se trasladó.' : t);
       setEnviando(false);
     }
   };
@@ -141,7 +141,7 @@ export const AjusteDlg: React.FC<{ id: string; modo: 'anular' | 'corregir' }> = 
       {modo === 'corregir' && <div className="fila2">
         <div className="campo"><label>Registrado</label><input value={cant(actual, u)} disabled /></div>
         <div className={'campo' + (malN ? ' mal' : '')}><label htmlFor="nueva">Cantidad correcta ({u === 'units' ? 'unidades' : u})</label>
-          <input id="nueva" inputMode="numeric" autoFocus value={nueva} onChange={e => setNueva(e.target.value.replace(/\D/g, '').slice(0, 7))} />
+          <input id="nueva" inputMode="numeric" autoFocus value={nueva} onChange={e => setNueva(e.target.value.split(',')[0].replace(/\D/g, '').slice(0, 7))} />
           <div className="ayuda">{malN ? (n === actual ? 'Es la misma cantidad.' : n <= 0 ? 'Para dejarlo en cero, usa Anular.' : `Revisa el peso: un camión no supera los ${num(TOPE_CAMION)} kg.`) : ''}</div></div>
       </div>}
       <div className="campo"><label>Motivo</label><div className="opciones">{MOTIVOS.map(x => (
@@ -212,11 +212,7 @@ const PanelUsuario: React.FC<{ id: string }> = ({ id }) => {
     try { await apiService.updateProfile(u.id, { full_name: nombre.trim(), role: rol, is_active: activa }); await c.recargar(); c.aviso('Usuario actualizado'); }
     catch (e) { c.aviso('No se pudo guardar: ' + (e as Error).message); }
   };
-  const pin = async () => {
-    try { await apiService.resetPin(u.id); c.aviso(`PIN de ${u.full_name} reiniciado: deberá entrar con su contraseña y crear uno nuevo`); }
-    catch (e) { c.aviso('No se pudo reiniciar: ' + (e as Error).message); }
-  };
-  return <Marco sub="Usuario" tit={u.full_name} pie={<><button className="btn" onClick={pin}>Reiniciar PIN</button><button className="btn pri" disabled={!nombre.trim()} onClick={guardar}>Guardar cambios</button></>}>
+  return <Marco sub="Usuario" tit={u.full_name} pie={<button className="btn pri" disabled={!nombre.trim()} onClick={guardar}>Guardar cambios</button>}>
     <div className="campo"><label htmlFor="un">Nombre</label><input id="un" value={nombre} onChange={e => setNombre(e.target.value)} /></div>
     <div className="campo"><label>Correo</label><input value={u.email} disabled /></div>
     <div className="fila2">

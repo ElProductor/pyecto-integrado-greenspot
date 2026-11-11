@@ -68,6 +68,7 @@ export interface MaterialProduct {
 
 export interface Batch {
   id: string;
+  created_by?: string | null;
   batch_number: string;
   material_id: string;
   supplier_id?: string;
