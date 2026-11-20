@@ -99,7 +99,7 @@ El 002 carga bodegas, materiales y empresas de ejemplo. Los códigos de bodega (
 
 ## Pruebas
 
-Recorren la app en un Chromium sin ventana, como administración y como operario. Bloquean cualquier escritura a la base, así que se pueden correr contra los datos reales.
+Recorren la app en un Chromium sin ventana, como administración y como operario. Bloquean cualquier escritura a la base, así que se pueden correr contra los datos reales. Después corrimos también los seis casos EV3, que sí dejaron datos de prueba con autorización. En `pruebas/README.md` está el relato completo, caso por caso.
 
 1. Agrega una cuenta de operario de prueba en `.env.local` (`GREENSPOT_CORREO` y `GREENSPOT_CLAVE`).
 2. Con `npm run dev` abierto, ejecuta:
@@ -107,4 +107,4 @@ Recorren la app en un Chromium sin ventana, como administración y como operario
    npm run pruebas
    ```
 
-Las capturas quedan en `pruebas/capturas/`, que no se sube al repositorio. Si Chromium no está en `/usr/bin/chromium`, indica su ruta en la variable `CHROMIUM`.
+Las capturas quedan en `pruebas/capturas/` y las de las pruebas de pantalla en `pruebas/capturas-pantalla/`; ambas se suben al repositorio como evidencia. Si Chromium no está en `/usr/bin/chromium`, indica su ruta en la variable `CHROMIUM`.
