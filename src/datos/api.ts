@@ -53,11 +53,12 @@ const bodegaDe = (whs: Warehouse[], category: string) =>
 export const apiService = {
   getWarehouses: (): Promise<Warehouse[]> => todo(() => db().from('warehouses').select('*').order('name').order('id')),
 
-  getStakeholders: (): Promise<Stakeholder[]> => todo(() => db().from('stakeholders').select('*').order('name').order('id')),
+  // Contactos solo para administración (008): la función los devuelve vacíos al operario.
+  getStakeholders: (): Promise<Stakeholder[]> => todo(() => db().rpc('empresas').order('name').order('id')),
   createStakeholder: (item: Omit<Stakeholder, 'id' | 'created_at'>): Promise<Stakeholder> =>
-    q(db().from('stakeholders').insert(item).select().single()),
+    q(db().from('stakeholders').insert(item).select('id, name, type, tax_id, city, industry_sector, notes, created_at, updated_at').single()),
   updateStakeholder: (id: string, updates: Partial<Stakeholder>): Promise<Stakeholder> =>
-    q(db().from('stakeholders').update(updates).eq('id', id).select().single()),
+    q(db().from('stakeholders').update(updates).eq('id', id).select('id, name, type, tax_id, city, industry_sector, notes, created_at, updated_at').single()),
 
   getMaterials: (): Promise<MaterialProduct[]> => todo(() => db().from('materials_and_products').select('*').order('name').order('id')),
 
@@ -104,7 +105,7 @@ export const apiService = {
   },
 
   getBatches: (): Promise<Batch[]> => todo(() => db().from('batches')
-    .select('*, material:materials_and_products(*), supplier:stakeholders(*), warehouse:warehouses(*)')
+    .select('*, material:materials_and_products(*), supplier:stakeholders(id, name, type, tax_id, city, industry_sector, notes, created_at, updated_at), warehouse:warehouses(*)')
     .order('reception_date', { ascending: false }).order('id')),
 
   /** Crea el lote y su entrada. Si el número ya existe y es este mismo lote (reintento tras un corte), lo reusa;
@@ -163,7 +164,7 @@ export const apiService = {
 
   // El operario no tiene permiso para leer certificados: devuelve lista vacía en vez de error.
   getCertificates: (): Promise<ValorizationCertificate[]> => todo(() => db().from('valorization_certificates')
-    .select('*, stakeholder:stakeholders(*), batch:batches(*)')
+    .select('*, stakeholder:stakeholders(id, name, type, tax_id, city, industry_sector, notes, created_at, updated_at), batch:batches(*)')
     .order('issue_date', { ascending: false }).order('id')),
   createCertificate: (item: Omit<ValorizationCertificate, 'id' | 'created_at'>): Promise<ValorizationCertificate> =>
     q(db().from('valorization_certificates').insert(item).select().single()),

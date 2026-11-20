@@ -19,7 +19,7 @@ export const Materiales: React.FC = () => {
           {esAdmin && <td className="opc sec">{m.code}</td>}<td className="opc">{m.polymer_type}</td>
           {B.map(b => { const x = stockEn(D, m.id, b.id); return <td key={b.id} className="der tn opc">{x ? num(x) : <span className="sec">—</span>}</td>; })}
           <td className="der tn"><b style={{ fontWeight: 600 }}>{cant(m.current_stock, m.unit)}</b></td>
-          <td className="der"><button className="btn chico" onClick={e => { e.stopPropagation(); setDlg({ t: 'flujo', f: 'contar', pre: m.id }); }}>Corregir</button></td>
+          <td className="der">{esAdmin && <button className="btn chico" onClick={e => { e.stopPropagation(); setDlg({ t: 'flujo', f: 'contar', pre: m.id }); }}>Corregir</button>}</td>
         </tr>)) : <tr className="vacio"><td colSpan={9}>Ningún material coincide.</td></tr>}</tbody></table>
   </>;
 };

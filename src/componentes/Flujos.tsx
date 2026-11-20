@@ -21,7 +21,7 @@ function pasos(c: Ctx, f: Flujo): Paso[] {
   switch (f) {
     case 'mov': return [{ t: '¿Qué pasó?', tipo: 'op', k: 'f', op: () => [
       { v: 'camion', b: 'Entró material', d: 'Llegó un camión' }, { v: 'salida', b: 'Salió material', d: 'Despacho a un cliente' },
-      { v: 'mover', b: 'Traslado', d: 'De una bodega a otra' }, { v: 'prod', b: 'Producción', d: 'Se procesó material y salió producto' }, { v: 'contar', b: 'Corrección de conteo', d: 'Los kilos contados no coinciden' }] }];
+      { v: 'mover', b: 'Traslado', d: 'De una bodega a otra' }, { v: 'prod', b: 'Producción', d: 'Se procesó material y salió producto' }, ...(c.esAdmin ? [{ v: 'contar' as const, b: 'Corrección de conteo', d: 'Los kilos contados no coinciden' }] : [])] }]; // 005: el conteo lo corrige administración
     case 'camion': return [
       { t: 'Material', tipo: 'op', k: 'mat', op: () => D.mat.filter(m => m.category === 'raw_material' && m.unit === 'kg').map(m => ({ v: m.id, b: m.name, s: m.polymer_type })) },
       { t: 'Empresa generadora', tipo: 'op', k: 'emp', op: () => D.emp.filter(esGeneradora).map(e => ({ v: e.id, b: e.name, s: e.city })) },

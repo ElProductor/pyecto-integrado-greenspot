@@ -192,7 +192,7 @@ const PanelEmpresa: React.FC<{ e: Stakeholder }> = ({ e }) => {
 const PanelCert: React.FC<{ id: string }> = ({ id }) => {
   const c = useApp(), x = c.D.cert.find(k => k.id === id);
   if (!x) return null;
-  return <Marco sub="Certificado" tit={x.certificate_code} pie={<button className="btn pri" onClick={() => generateCertificatePdf(x).catch(e => c.aviso('No se pudo generar el PDF: ' + e.message))}>Descargar PDF</button>}>
+  return <Marco sub="Certificado" tit={x.certificate_code} pie={<button className="btn pri" onClick={() => generateCertificatePdf({ ...x, stakeholder: c.D.emp.find(e => e.id === x.stakeholder_id) || x.stakeholder }).catch(e => c.aviso('No se pudo generar el PDF: ' + e.message))}>Descargar PDF</button>}>
     <div className="doc">
       <div className="dc"><div><h5>Certificado de valorización</h5>Ley 20.920 (REP)</div><div className="der">N° {x.certificate_code}<br />{new Date(x.issue_date + 'T12:00').toLocaleDateString('es-CL')}</div></div>
       Greenspot certifica que recibió y valorizó los siguientes residuos plásticos de <b>{x.stakeholder?.name}</b>, RUT {x.stakeholder?.tax_id}:

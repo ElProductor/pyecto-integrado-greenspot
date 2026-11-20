@@ -1,6 +1,6 @@
 -- ==============================================================================
--- GREENSPOT · 005 (PROPUESTA, NO APLICADA) · Cierre de la auditoría de operario del 17-nov-2026
--- Se aplica DESPUÉS de 004. Se puede correr de nuevo sin daño. Requiere aprobación antes de Supabase.
+-- GREENSPOT · 005 · Cierre de la auditoría de operario del 17-nov-2026 (APLICADO en Supabase el 20-nov-2026)
+-- Se aplica DESPUÉS de 004. Se puede correr de nuevo sin daño.
 --   GS-SEC-002  Ajustes de conteo/merma sueltos: solo administración.
 --   GS-SEC-003  Producción: el producto exige su consumo en la misma operación y no puede superarlo.
 --   GS-SEC-004  Tope por movimiento (y por corrección) para el operario, no solo en la recepción.
