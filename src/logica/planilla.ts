@@ -51,7 +51,7 @@ export function leerPlanilla(libro: XLSX.WorkBook, D: Datos): Carga {
     if (!cat) return err('Inventario', i, `categoría «${txt(f['Categoría'])}» no válida.`);
     if (!uni) return err('Inventario', i, 'la unidad debe ser kg o unidades.');
     if (!(min >= 0)) return err('Inventario', i, 'el mínimo debe ser un número.');
-    c.materiales.push({ code: cod, name: txt(f.Material), description: '', polymer_type: tipo, category: cat, unit: uni, color: '', minimum_stock: min, current_stock: 0, unit_cost_usd: 0, unit_price_usd: 0, co2_factor_kg: 1.5, is_active: true });
+    c.materiales.push({ code: cod, name: txt(f.Material), description: '', polymer_type: tipo, category: cat, unit: uni, color: '', minimum_stock: min, current_stock: 0, unit_cost_usd: 0, unit_price_usd: 0, co2_factor_kg: 1.85, is_active: true });
   });
 
   hoja('Empresas').forEach((f, i) => {

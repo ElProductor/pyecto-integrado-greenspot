@@ -50,7 +50,7 @@ export const FormMaterial: React.FC = () => {
     try {
       await apiService.createMaterial({
         code: f.code.trim(), name: f.name.trim(), description: '', polymer_type: f.polymer_type as MaterialProduct['polymer_type'], category: f.category as MaterialProduct['category'],
-        unit: f.unit as MaterialProduct['unit'], color: '', minimum_stock: +f.minimum_stock, current_stock: 0, unit_cost_usd: 0, unit_price_usd: 0, co2_factor_kg: 1.5, is_active: true
+        unit: f.unit as MaterialProduct['unit'], color: '', minimum_stock: +f.minimum_stock, current_stock: 0, unit_cost_usd: 0, unit_price_usd: 0, co2_factor_kg: 1.85, is_active: true
       }, c.usuario);
       await c.recargar(); c.setDlg(null); c.aviso('Material creado. El stock entra con «Registrar movimiento».');
     } catch (e) { setError((e as Error).message); }

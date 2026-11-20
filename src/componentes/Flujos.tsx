@@ -11,6 +11,8 @@ interface Paso { t: string; tipo: Tipo; k?: keyof W; op?: (w: W) => Op[] }
 interface W { f: Flujo; paso: number; mat?: string; emp?: string; cli?: string; desde?: string; hacia?: string; bod?: string; prod?: string; bruto: string; tara: string; kilos: string; obt: string; sel: Record<string, boolean> }
 
 const NOMBRE: Record<Flujo, string> = { mov: 'Registrar movimiento', camion: 'Registrar camión', salida: 'Salida de material', mover: 'Traslado entre bodegas', contar: 'Corrección de conteo', prod: 'Registrar producción', cert: 'Emitir certificado' };
+// Texto del campo («1.500,5» o «1500,5») a número: la coma es el decimal.
+const kg = (s: string | undefined) => Number((s || '').replace(/\./g, '').replace(',', '.')) || 0;
 
 function pasos(c: Ctx, f: Flujo): Paso[] {
   const { D } = c, B = bodegas(D), mat = (id?: string) => D.mat.find(m => m.id === id)!;
@@ -68,10 +70,10 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
   // Estado del paso actual: si se puede seguir y qué mostrar abajo.
   const est = (() => {
     if (p.tipo === 'op') return { ok: !!(p.k && w[p.k]) };
-    if (p.tipo === 'peso') { const n = (+w.bruto || 0) - (+w.tara || 0); return { ok: n > 0 && n <= TOPE_CAMION, n, mal: w.bruto && w.tara && n <= 0 ? 'La tara no puede ser mayor que el peso con carga' : n > TOPE_CAMION ? `Revisa el peso: un camión no supera los ${num(TOPE_CAMION)} kg netos` : '' }; }
-    if (p.tipo === 'kilos') { const k = +w.kilos || 0, mx = disponible(); return { ok: k > 0 && k <= mx, n: k, mx, mal: k > mx ? `Solo hay ${cant(mx, u)} disponibles` : '' }; }
-    if (p.tipo === 'obtenido') { const k = +w.kilos || 0, o = +w.obt || 0; return { ok: o > 0 && o <= k, n: o, mx: k, mal: o > k ? `No puede salir más de lo que entró (${cant(k, u)})` : '' }; }
-    if (p.tipo === 'conteo') { const sis = stockEn(D, w.mat!, w.bod!), n = w.kilos === '' ? null : +w.kilos; return { ok: n !== null && n !== sis, n, sis }; }
+    if (p.tipo === 'peso') { const n = (kg(w.bruto) || 0) - (kg(w.tara) || 0); return { ok: n > 0 && n <= TOPE_CAMION, n, mal: w.bruto && w.tara && n <= 0 ? 'La tara no puede ser mayor que el peso con carga' : n > TOPE_CAMION ? `Revisa el peso: un camión no supera los ${num(TOPE_CAMION)} kg netos` : '' }; }
+    if (p.tipo === 'kilos') { const k = kg(w.kilos) || 0, mx = disponible(); return { ok: k > 0 && k <= mx, n: k, mx, mal: k > mx ? `Solo hay ${cant(mx, u)} disponibles` : '' }; }
+    if (p.tipo === 'obtenido') { const k = kg(w.kilos) || 0, o = kg(w.obt) || 0; return { ok: o > 0 && o <= k, n: o, mx: k, mal: o > k ? `No puede salir más de lo que entró (${cant(k, u)})` : '' }; }
+    if (p.tipo === 'conteo') { const sis = stockEn(D, w.mat!, w.bod!), n = w.kilos === '' ? null : kg(w.kilos); return { ok: n !== null && n !== sis, n, sis }; }
     const s = lotesCert().filter(l => w.sel[l.id]); return { ok: s.length > 0, lotes: s, n: s.reduce((a, l) => a + Number(l.current_weight_kg), 0) };
   })();
 
@@ -85,7 +87,11 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
   };
   const atras = () => (w.paso && !(pre && w.paso === 1) ? setW({ ...w, paso: w.paso - 1 }) : cerrar());
   const siguiente = () => { if (!est.ok || guardando) return; if (!ult) setW({ ...w, paso: w.paso + 1 }); else guardar(); };
-  const numero = (k: 'bruto' | 'tara' | 'kilos' | 'obt') => (e: React.ChangeEvent<HTMLInputElement>) => setW({ ...w, [k]: e.target.value.split(',')[0].replace(/\D/g, '').slice(0, 7) }); // la coma es decimal en Chile: se corta ahí en vez de pegar los dígitos (×10)
+  // Chile: la coma es decimal y el punto es de miles (se ignora). Máx. 7 enteros y 2 decimales.
+  const numero = (k: 'bruto' | 'tara' | 'kilos' | 'obt') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [ent, ...dec] = e.target.value.split(',');
+    setW({ ...w, [k]: ent.replace(/\D/g, '').slice(0, 7) + (dec.length ? ',' + dec.join('').replace(/\D/g, '').slice(0, 2) : '') });
+  };
 
   async function guardar() {
     setGuardando(true); setError('');
@@ -94,32 +100,32 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
     try {
       let msg = '';
       if (w.f === 'camion') {
-        const n = +w.bruto - +w.tara, anio = new Date().getFullYear();
+        const n = kg(w.bruto) - kg(w.tara), anio = new Date().getFullYear();
         const sig = Math.max(0, ...D.lotes.map(l => +(l.batch_number.match(new RegExp(`^LOTE-${anio}-(\\d+)$`))?.[1] || 0))) + 1;
         const acopio = D.bod.find(b => b.code === 'BOD-PM-ACOPIO') || bodegas(D)[0];
         const l = await apiService.createBatch({
           batch_number: `LOTE-${anio}-${String(sig).padStart(4, '0')}`, material_id: w.mat, supplier_id: w.emp, warehouse_id: acopio.id,
           initial_weight_kg: n, current_weight_kg: n, impurity_percentage: 0, reception_date: new Date().toISOString(), status: 'received',
-          notes: `Romana: ${num(+w.bruto)} kg con carga, ${num(+w.tara)} kg tara`
+          notes: `Romana: ${num(kg(w.bruto))} kg con carga, ${num(kg(w.tara))} kg tara`
         } as Partial<Batch>, c.usuario, c.uid);
         msg = `Lote ${l.batch_number} registrado: ${num(n)} kg`;
       } else if (w.f === 'salida') {
         const cli = D.emp.find(e => e.id === w.cli)!;
-        await mov({ movement_type: 'dispatch', from_warehouse_id: w.desde, quantity: +w.kilos, reference_doc: `Despacho a ${cli.name}` });
-        msg = `Salida registrada. Quedan ${cant(Number(m!.current_stock) - +w.kilos, u)}`;
+        await mov({ movement_type: 'dispatch', from_warehouse_id: w.desde, quantity: kg(w.kilos), reference_doc: `Despacho a ${cli.name}` });
+        msg = `Salida registrada. Quedan ${cant(Number(m!.current_stock) - kg(w.kilos), u)}`;
       } else if (w.f === 'mover') {
-        await mov({ movement_type: 'internal_transfer', from_warehouse_id: w.desde, to_warehouse_id: w.hacia, quantity: +w.kilos, reference_doc: 'Traslado entre bodegas' });
+        await mov({ movement_type: 'internal_transfer', from_warehouse_id: w.desde, to_warehouse_id: w.hacia, quantity: kg(w.kilos), reference_doc: 'Traslado entre bodegas' });
         msg = 'Traslado registrado';
       } else if (w.f === 'prod') {
         // Consumo y producto en una sola llamada: si falla uno, no se guarda ninguno. La merma es la diferencia.
-        const t = clave, ref = `Producción PRD-${t}`, merma = +w.kilos - +w.obt;
+        const t = clave, ref = `Producción PRD-${t}`, merma = kg(w.kilos) - kg(w.obt);
         await apiService.recordMovements([
-          { ...base, movement_number: `PRC-${t}`, movement_type: 'production_intake', from_warehouse_id: w.desde!, quantity: +w.kilos, reference_doc: ref, notes: `Merma ${num(merma)} kg` },
-          { ...base, movement_number: `PRD-${t}`, material_id: w.prod!, movement_type: 'production_output', to_warehouse_id: w.hacia!, quantity: +w.obt, reference_doc: ref, notes: `Merma ${num(merma)} kg` }
+          { ...base, movement_number: `PRC-${t}`, movement_type: 'production_intake', from_warehouse_id: w.desde!, quantity: kg(w.kilos), reference_doc: ref, notes: `Merma ${num(merma)} kg` },
+          { ...base, movement_number: `PRD-${t}`, material_id: w.prod!, movement_type: 'production_output', to_warehouse_id: w.hacia!, quantity: kg(w.obt), reference_doc: ref, notes: `Merma ${num(merma)} kg` }
         ] as Omit<InventoryMovement, 'id'>[]);
-        msg = `Producción registrada: ${num(+w.obt)} kg obtenidos, merma ${num(merma)} kg`;
+        msg = `Producción registrada: ${num(kg(w.obt))} kg obtenidos, merma ${num(merma)} kg`;
       } else if (w.f === 'contar') {
-        const d = +w.kilos - stockEn(D, w.mat!, w.bod!);
+        const d = kg(w.kilos) - stockEn(D, w.mat!, w.bod!);
         await mov(d > 0 ? { movement_type: 'count_adjustment_in', to_warehouse_id: w.bod, quantity: d, reference_doc: 'Corrección de conteo' }
           : { movement_type: 'waste_adjustment', from_warehouse_id: w.bod, quantity: -d, reference_doc: 'Corrección de conteo' });
         msg = `Conteo corregido (${d > 0 ? '+' : '−'}${cant(Math.abs(d), u)})`;
@@ -152,7 +158,7 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
     m && ['Material', m.name], w.emp && ['Empresa', nombre(w.emp)], w.cli && ['Cliente', nombre(w.cli)],
     w.desde && ['Desde', nombreBod(D.bod.find(b => b.id === w.desde))], w.hacia && ['Hacia', nombreBod(D.bod.find(b => b.id === w.hacia))],
     w.bod && ['Bodega', nombreBod(D.bod.find(b => b.id === w.bod))], w.prod && ['Producto', nombre(w.prod, D.mat)],
-    p.tipo === 'obtenido' && ['Entran', cant(+w.kilos, u)]
+    p.tipo === 'obtenido' && ['Entran', cant(kg(w.kilos), u)]
   ].filter(Boolean) as [string, string][];
 
   const e = est as { ok: boolean; n?: number | null; mx?: number; sis?: number; mal?: string };
@@ -168,13 +174,13 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
           {!p.op!(w).length && <div className="opcion" style={{ color: 'var(--texto3)' }}>No hay opciones disponibles.</div>}
         </div>}
         {p.tipo === 'peso' && <div className="fila2">
-          <div className="campo"><label htmlFor="bruto">Peso con carga (kg)</label><input id="bruto" inputMode="numeric" autoFocus value={w.bruto} onChange={numero('bruto')} /></div>
-          <div className="campo"><label htmlFor="tara">Camión vacío / tara (kg)</label><input id="tara" inputMode="numeric" value={w.tara} onChange={numero('tara')} /></div>
+          <div className="campo"><label htmlFor="bruto">Peso con carga (kg)</label><input id="bruto" inputMode="decimal" autoFocus value={w.bruto} onChange={numero('bruto')} /></div>
+          <div className="campo"><label htmlFor="tara">Camión vacío / tara (kg)</label><input id="tara" inputMode="decimal" value={w.tara} onChange={numero('tara')} /></div>
         </div>}
         {p.tipo === 'kilos' && <div className={'campo' + (e.mal ? ' mal' : '')}><label htmlFor="kilos">Cantidad ({u === 'units' ? 'unidades' : u})</label>
-          <input id="kilos" inputMode="numeric" autoFocus value={w.kilos} onChange={numero('kilos')} /><div className="ayuda">Disponible: {cant(e.mx || 0, u)}</div></div>}
-        {p.tipo === 'obtenido' && <div className={'campo' + (e.mal ? ' mal' : '')}><label htmlFor="obt">Kilos de producto</label><input id="obt" inputMode="numeric" autoFocus value={w.obt} onChange={numero('obt')} /></div>}
-        {p.tipo === 'conteo' && <div className="campo"><label htmlFor="kilos">Cantidad contada ({u === 'units' ? 'unidades' : u})</label><input id="kilos" inputMode="numeric" autoFocus value={w.kilos} onChange={numero('kilos')} /></div>}
+          <input id="kilos" inputMode="decimal" autoFocus value={w.kilos} onChange={numero('kilos')} /><div className="ayuda">Disponible: {cant(e.mx || 0, u)}</div></div>}
+        {p.tipo === 'obtenido' && <div className={'campo' + (e.mal ? ' mal' : '')}><label htmlFor="obt">Kilos de producto</label><input id="obt" inputMode="decimal" autoFocus value={w.obt} onChange={numero('obt')} /></div>}
+        {p.tipo === 'conteo' && <div className="campo"><label htmlFor="kilos">Cantidad contada ({u === 'units' ? 'unidades' : u})</label><input id="kilos" inputMode="decimal" autoFocus value={w.kilos} onChange={numero('kilos')} /></div>}
         {p.tipo === 'multi' && <><div className="opciones">{lotesCert().map(l => (
           <label key={l.id} className="opcion"><span><input type="checkbox" checked={!!w.sel[l.id]} onChange={ev => setW({ ...w, sel: { ...w.sel, [l.id]: ev.target.checked } })} /> {l.batch_number} · {l.material?.name}</span><small className="tn">{num(l.current_weight_kg)} kg</small></label>
         ))}</div><div style={{ height: 12 }} /></>}

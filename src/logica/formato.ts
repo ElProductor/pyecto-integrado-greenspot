@@ -1,5 +1,5 @@
 /* ---------- formato ---------- */
-export const num = (n: number) => Math.round(Number(n) || 0).toLocaleString('es-CL');
+export const num = (n: number) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 export const uni = (u: string) => (u === 'units' ? 'u' : u === 'big_bag' ? 'maxisacos' : u);
 export const cant = (n: number, u = 'kg') => num(n) + ' ' + uni(u);
 export const toneladas = (kg: number) => (kg / 1000).toLocaleString('es-CL', { maximumFractionDigits: 1 });
