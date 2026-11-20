@@ -1,0 +1,261 @@
+<title>Auditoría Greenspot · operario</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Informe técnico sobrio: una columna de lectura, tablas anchas con scroll propio, severidad como franja de color. */
+:root {
+  --bg:#f6f7f5; --sup:#ffffff; --fg:#1d2420; --sec:#5b6660; --linea:#d9ddd8; --acento:#2f6b4f;
+  --crit:#b3261e; --alta:#c25a12; --media:#a07a00; --baja:#3d6a8a; --info:#6b7570;
+  --ok-bg:#e6f1ea; --ok-fg:#225b3d; --mal-bg:#fbe7e4; --mal-fg:#8f1d16; --no-bg:#eef0ee; --no-fg:#5b6660;
+  --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#141917; --sup:#1b211e; --fg:#e3e8e4; --sec:#9aa59f; --linea:#2d3531; --acento:#7cc3a0;
+  --crit:#f2867e; --alta:#f0a066; --media:#e0c25a; --baja:#8fbbdb; --info:#a3ada8;
+  --ok-bg:#1d3327; --ok-fg:#9fd8b8; --mal-bg:#3a1e1b; --mal-fg:#f5aaa3; --no-bg:#232a26; --no-fg:#9aa59f; color-scheme:dark } }
+:root[data-theme="dark"] {
+  --bg:#141917; --sup:#1b211e; --fg:#e3e8e4; --sec:#9aa59f; --linea:#2d3531; --acento:#7cc3a0;
+  --crit:#f2867e; --alta:#f0a066; --media:#e0c25a; --baja:#8fbbdb; --info:#a3ada8;
+  --ok-bg:#1d3327; --ok-fg:#9fd8b8; --mal-bg:#3a1e1b; --mal-fg:#f5aaa3; --no-bg:#232a26; --no-fg:#9aa59f; color-scheme:dark }
+body { background:var(--bg); color:var(--fg); font:15px/1.6 var(--sans); }
+.pag { max-width:1080px; margin:0 auto; padding-block:40px 80px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); display:grid; gap:48px; }
+h1,h2,h3 { text-wrap:balance; line-height:1.25; margin:0; }
+h1 { font-size:1.9rem; font-weight:600; } h2 { font-size:1.3rem; font-weight:600; padding-bottom:8px; border-bottom:1px solid var(--linea); }
+h3 { font-size:1.05rem; font-weight:600; } h4 { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--sec); margin:14px 0 2px; font-weight:600; }
+p { margin:0; } code,pre { font-family:var(--mono); font-size:.82rem; }
+.eti { font-size:.75rem; text-transform:uppercase; letter-spacing:.1em; color:var(--acento); font-weight:600; }
+.cab { display:grid; gap:10px; } .cab p { color:var(--sec); max-width:70ch; }
+section { display:grid; gap:18px; min-width:0; }
+.conteo { display:flex; flex-wrap:wrap; gap:0; border:1px solid var(--linea); background:var(--sup); }
+.conteo div { flex:1 1 110px; padding:14px 16px; border-right:1px solid var(--linea); display:grid; gap:2px; }
+.conteo div:last-child { border-right:0; } .conteo b { font-size:1.7rem; font-variant-numeric:tabular-nums; font-weight:600; }
+.conteo span { font-size:.78rem; color:var(--sec); }
+.conteo .crit b { color:var(--crit); } .conteo .alta b { color:var(--alta); } .conteo .media b { color:var(--media); } .conteo .baja b { color:var(--baja); }
+.sev { display:inline-block; font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border:1px solid currentColor; }
+.sev.crit { color:var(--crit); } .sev.alta { color:var(--alta); } .sev.media { color:var(--media); } .sev.baja { color:var(--baja); } .sev.info { color:var(--info); }
+.top { list-style:none; padding:0; margin:0; display:grid; gap:0; }
+.top li { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; padding:12px 0; border-bottom:1px solid var(--linea); }
+.top a { color:var(--fg); font-weight:500; } .top small { grid-column:2; color:var(--sec); }
+.impacto { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; }
+.impacto div { display:grid; gap:4px; align-content:start; } .impacto h3 { font-size:.95rem; color:var(--acento); }
+.nota { border-left:3px solid var(--acento); padding:10px 14px; background:var(--sup); color:var(--sec); font-size:.9rem; }
+.hal { background:var(--sup); border:1px solid var(--linea); display:grid; min-width:0; }
+.hal header { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid var(--linea); }
+.hal header h3 { flex:1 1 300px; } .cod { font-family:var(--mono); font-size:.8rem; color:var(--sec); }
+.meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); margin:0; padding:10px 18px; gap:8px 20px; border-bottom:1px solid var(--linea); }
+.meta dt { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--sec); } .meta dd { margin:0; font-size:.88rem; overflow-wrap:anywhere; }
+.cuerpo { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:0 28px; padding:4px 18px 18px; }
+.cuerpo ol { margin:0; padding-left:20px; } .obt { color:var(--crit); }
+pre { background:var(--bg); border:1px solid var(--linea); padding:10px 12px; overflow-x:auto; margin:12px 0 0; white-space:pre; }
+.tabla { overflow-x:auto; border:1px solid var(--linea); background:var(--sup); }
+table { border-collapse:collapse; width:100%; font-size:.84rem; min-width:860px; }
+th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--linea); vertical-align:top; }
+thead th { font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--sec); background:var(--bg); }
+tbody th { font-family:var(--mono); font-weight:500; font-size:.8rem; }
+td.m.ok { background:var(--ok-bg); color:var(--ok-fg); } td.m.mal { background:var(--mal-bg); color:var(--mal-fg); font-weight:600; } td.m.no { background:var(--no-bg); color:var(--no-fg); }
+.plan { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:24px; }
+.plan div { display:grid; gap:6px; align-content:start; } .plan ol,.plan ul { margin:0; padding-left:20px; display:grid; gap:6px; }
+.pie { color:var(--sec); font-size:.85rem; display:grid; gap:6px; }
+a { color:var(--acento); } a:focus-visible { outline:2px solid var(--acento); outline-offset:2px; }
+@media (max-width:720px) { .cuerpo { grid-template-columns:minmax(0,1fr); } h1 { font-size:1.5rem; } }
+</style>
+<main class="pag">
+<div class="cab"><span class="eti">Greenspot · Auditoría de seguridad · 17-nov-2026</span>
+<h1>Qué puede hacer un operario autenticado llamando directo a Supabase</h1>
+<p>Pruebas con la sesión de un operario, sin service_role ni clave secreta. En vivo solo se hizo lectura. Toda escritura se reprodujo en una réplica local de Postgres armada con los mismos SQL del repositorio (001–004), dentro de transacciones que se revierten.</p></div>
+
+<section><h2>1. Resumen ejecutivo</h2>
+<div class="conteo"><div class="crit"><b>3</b><span>Crítica</span></div><div class="alta"><b>4</b><span>Alta</span></div><div class="media"><b>7</b><span>Media</span></div><div class="baja"><b>3</b><span>Baja</span></div><div class="info"><b>1</b><span>Info</span></div><div><b>18</b><span>Total</span></div></div>
+<p>La base ya bloquea bien lo grueso: anónimos e inactivos no escriben, el stock no se edita directo, el historial no se borra, el operario no emite certificados ni se sube a admin. Lo que falla es que <b>las reglas de inventario solo existen en la recepción</b>. Ajustes, producción y correcciones no tienen tope ni coherencia. A eso se suma el registro público abierto, que convierte a cualquier persona en operario.</p>
+<h3>Los 5 riesgos principales</h3>
+<ol class="top"><li><span class="sev crit">Crítica</span><a href="#gs-sec-001">GS-SEC-001 · Registro público abierto: cualquiera con la clave pública crea una cuenta</a><small>Cualquier persona externa obtiene el rol operario: lee clientes y proveedores, y puede alterar inventario y trazabilidad.</small></li><li><span class="sev crit">Crítica</span><a href="#gs-sec-002">GS-SEC-002 · El operario crea o borra stock con ajustes de conteo y merma, sin tope ni nota</a><small>Inventario y balance de masa inservibles; se pueden inflar kilos valorizados o esconder pérdidas.</small></li><li><span class="sev crit">Crítica</span><a href="#gs-sec-003">GS-SEC-003 · Producción sin consumo o con producto mayor al consumo</a><small>Kilos de pellet «de la nada»: el certificado de valorización y el reporte Ley REP pueden respaldar material que nunca entró.</small></li><li><span class="sev alta">Alta</span><a href="#gs-sec-005">GS-SEC-005 · El stock en vivo no sale del kardex: 205.387 kg sin movimiento que los respalde</a><small>Ningún reporte ni certificado puede justificar esos kilos ante una fiscalización.</small></li><li><span class="sev alta">Alta</span><a href="#gs-sec-006">GS-SEC-006 · Lote fantasma: un lote sin entrada de stock llega a «despachado» y se certifica</a><small>Certificado de valorización sin material real detrás: es el documento que el generador presenta para la Ley REP.</small></li></ol>
+<h3>Impacto por área</h3>
+<div class="impacto">
+<div><h3>Inventario</h3><p>Un operario puede subir el stock a 9.000 millones de kg, vaciar una bodega, producir sin consumir o pasar la capacidad física. Además, 205.387 kg del stock vivo no tienen movimiento que los respalde.</p></div>
+<div><h3>Trazabilidad</h3><p>Movimientos con lote de otro material, lotes con fecha retroactiva y nombres de responsable falsos en el kardex.</p></div>
+<div><h3>Certificados</h3><p>Se puede certificar un lote que nunca tuvo entrada de material, y emitir certificados sin tipo de residuo, destino ni QR. Un operario puede subir un PDF a la carpeta de certificados.</p></div>
+<div><h3>Ley REP</h3><p>Los kilos valorizados que respalda cada certificado pueden no corresponder a material real. Ante una fiscalización, el sistema no puede demostrar el origen de esos kilos.</p></div>
+</div>
+<p class="nota">Con la propuesta <b>005_propuesta_cierre_operario.sql</b> aplicada en la réplica, los 12 ataques que hoy pasan quedan bloqueados y los 9 flujos legítimos (camión, producción coherente, anulación, despacho, traslado, avance de etapa, ajuste de admin, certificado real, foto) siguen funcionando. <b>Nada se ha aplicado en Supabase.</b></p>
+</section>
+
+<section><h2>2. Hallazgos detallados</h2>
+<p class="nota">El CVSS es una estimación de la base técnica. La severidad final pondera el impacto en certificados y cumplimiento, por eso 002 y 003 son críticas aunque su CVSS sea 6.5. Las pruebas citadas (A05, B01…) están en <code>ataque_operario.py</code>.</p>
+<article class="hal" id="gs-sec-001">
+<header><span class="cod">GS-SEC-001</span><span class="sev crit">Crítica</span><h3>Registro público abierto: cualquiera con la clave pública crea una cuenta</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>9.1</b> <code>AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>Supabase Auth (signup) + todas las tablas con is_active_user()</dd></div><div><dt>Rol</dt><dd>anónimo → cuenta nueva</dd></div><div><dt>Evidencia</dt><dd>Vivo (solo lectura de configuración) + réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Leer la configuración pública de Auth del proyecto: disable_signup = false.</li><li>Con la clave publicable (está en el bundle de la app) llamar a /auth/v1/signup con cualquier correo.</li><li>Con el token obtenido, leer stakeholders e inventory_movements.</li></ol>
+<pre><code>-- réplica, prueba A05 (cuenta recién creada por handle_new_user)
+SELECT count(*) FROM stakeholders;          -- 5 empresas con RUT
+SELECT count(*) FROM inventory_movements;   -- 7 movimientos</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Sin invitación no se puede crear cuenta; una cuenta no aprobada no ve nada.</p><h4>Obtenido</h4><p class="obt">Vivo: disable_signup=false. Réplica: la cuenta nueva ve 5 empresas con RUT y 7 movimientos, y puede registrar movimientos (ver 002–004).</p>
+<h4>Impacto</h4><p>Cualquier persona externa obtiene el rol operario: lee clientes y proveedores, y puede alterar inventario y trazabilidad.</p><h4>Corrección</h4><p>Supabase › Authentication › Sign In / Providers › desactivar «Allow new users to sign up». Cuentas nuevas solo por invitación del admin. Además, GS-SEC-013.</p><h4>Prueba de regresión</h4><p>A05: cuenta creada por signup → count(stakeholders)+count(inventory_movements) = 0. En CI: GET /auth/v1/settings → disable_signup = true.</p></div></div></article><article class="hal" id="gs-sec-002">
+<header><span class="cod">GS-SEC-002</span><span class="sev crit">Crítica</span><h3>El operario crea o borra stock con ajustes de conteo y merma, sin tope ni nota</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>6.5</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>inventory_movements (count_adjustment_in, waste_adjustment) → inventory_stock</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Entrar como operario activo.</li><li>Insertar un count_adjustment_in de 9.000.000.000 kg (B01).</li><li>Insertar un waste_adjustment por todo el stock de una fila, sin notas (B04).</li></ol>
+<pre><code>INSERT INTO inventory_movements(movement_number,movement_type,material_id,to_warehouse_id,quantity,operator_name)
+VALUES (&#x27;X&#x27;,&#x27;count_adjustment_in&#x27;,&lt;material&gt;,&lt;bodega&gt;,9000000000,&#x27;x&#x27;);
+
+INSERT INTO inventory_movements(movement_number,movement_type,material_id,from_warehouse_id,quantity,operator_name)
+SELECT &#x27;X&#x27;,&#x27;waste_adjustment&#x27;,material_id,warehouse_id,quantity,&#x27;x&#x27;
+  FROM inventory_stock WHERE material_id=&lt;m&gt; AND warehouse_id=&lt;b&gt;;</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Rechazo: los ajustes sueltos los registra administración.</p><h4>Obtenido</h4><p class="obt">B01: stock ahora 9.000.061.230 kg. B04: una fila de 61.230 kg queda en 0, sin nota.</p>
+<h4>Impacto</h4><p>Inventario y balance de masa inservibles; se pueden inflar kilos valorizados o esconder pérdidas.</p><h4>Corrección</h4><p>005 §1: en check_movement_operario, si no es admin y el tipo es count_adjustment_in o waste_adjustment sin «Anula/Corrige» → RAISE &#x27;Las correcciones de conteo las registra administración.&#x27;</p><h4>Prueba de regresión</h4><p>B01 y B04 deben fallar como operario; L07 (admin, sobrante 50 kg) debe pasar.</p></div></div></article><article class="hal" id="gs-sec-003">
+<header><span class="cod">GS-SEC-003</span><span class="sev crit">Crítica</span><h3>Producción sin consumo o con producto mayor al consumo</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>6.5</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>inventory_movements (production_intake / production_output)</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Insertar solo un production_output de 900.000 kg (B02).</li><li>Insertar un consumo de 1 kg y un producto de 40.000 kg en la misma llamada (B03).</li></ol>
+<pre><code>INSERT INTO inventory_movements(...,movement_type,...,quantity) VALUES (&#x27;X&#x27;,&#x27;production_output&#x27;,...,900000);
+-- B03: intake 1 kg + output 40.000 kg en el mismo insert</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>El producto exige su consumo en la misma operación, no lo supera y lleva la merma en notas.</p><h4>Obtenido</h4><p class="obt">B02 y B03 se guardan; el stock de pellet sube sin materia prima.</p>
+<h4>Impacto</h4><p>Kilos de pellet «de la nada»: el certificado de valorización y el reporte Ley REP pueden respaldar material que nunca entró.</p><h4>Corrección</h4><p>005 §1: production_* exige notas; production_output exige production_intake del mismo usuario en la misma transacción (xmin = pg_current_xact_id()) y producto ≤ consumo.</p><h4>Prueba de regresión</h4><p>B02, B03 y B03c (producto en otra llamada) fallan; L02 (consume 1.000, obtiene 900) pasa.</p></div></div></article><article class="hal" id="gs-sec-004">
+<header><span class="cod">GS-SEC-004</span><span class="sev alta">Alta</span><h3>El tope de un camión (50.000 kg) solo existe en la recepción; «Corrige» no tiene tope</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>6.5</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>check_movement / tope_camion()</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Registrar un movimiento propio de hoy.</li><li>Insertar un «Corrige MOV-…» de +5.000.000 kg sobre él (E05).</li></ol>
+<pre><code>INSERT INTO inventory_movements(movement_number,movement_type,material_id,to_warehouse_id,quantity,operator_name,reference_doc,notes)
+VALUES (&#x27;X&#x27;,&#x27;count_adjustment_in&#x27;,&lt;m&gt;,&lt;b&gt;,5000000,&#x27;x&#x27;,&#x27;Corrige SET-OP1-HOY&#x27;,&#x27;m&#x27;);</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Ningún movimiento de operario supera un camión.</p><h4>Obtenido</h4><p class="obt">Se guarda: +5.000.000 kg.</p>
+<h4>Impacto</h4><p>Una corrección sirve como vía para inflar stock sin pasar por el control de recepción.</p><h4>Corrección</h4><p>005 §1: si no es admin y quantity &gt; tope_camion() → RAISE, para todo tipo de movimiento.</p><h4>Prueba de regresión</h4><p>E05 falla como operario; L01 (camión normal) pasa.</p></div></div></article><article class="hal" id="gs-sec-005">
+<header><span class="cod">GS-SEC-005</span><span class="sev alta">Alta</span><h3>El stock en vivo no sale del kardex: 205.387 kg sin movimiento que los respalde</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>N/A</b> <code>Integridad de datos, no es un ataque</code></dd></div>
+<div><dt>Activo</dt><dd>inventory_stock vs inventory_movements (datos de 002_datos_ejemplo)</dd></div><div><dt>Rol</dt><dd>operario (lectura)</dd></div><div><dt>Evidencia</dt><dd>Vivo (solo lectura)</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Como operario, sumar inventory_stock.</li><li>Sumar el kardex por tipo (entradas − salidas).</li><li>Comparar por material y bodega.</li></ol>
+<pre><code>SELECT sum(quantity) FROM inventory_stock;                 -- 226.687 kg
+SELECT sum(CASE WHEN movement_type IN (&#x27;reception&#x27;,&#x27;production_output&#x27;,&#x27;count_adjustment_in&#x27;) THEN quantity
+                WHEN movement_type IN (&#x27;dispatch&#x27;,&#x27;production_intake&#x27;,&#x27;waste_adjustment&#x27;) THEN -quantity END)
+  FROM inventory_movements;                                  -- 21.300 kg</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Regla 1: el stock es la suma del kardex.</p><h4>Obtenido</h4><p class="obt">11 de 11 filas descuadradas; 205.387 kg sin asiento.</p>
+<h4>Impacto</h4><p>Ningún reporte ni certificado puede justificar esos kilos ante una fiscalización.</p><h4>Corrección</h4><p>006_propuesta_saldo_inicial.sql: registra cada diferencia como asiento «Saldo inicial» sin cambiar el stock (probado en réplica: stock = kardex = catálogo = 224.717 kg). O bien borrar los datos de ejemplo antes de llevarlo a la empresa.</p><h4>Prueba de regresión</h4><p>En CI: para cada (material, bodega), stock = suma del kardex. Debe dar 0 filas descuadradas.</p></div></div></article><article class="hal" id="gs-sec-006">
+<header><span class="cod">GS-SEC-006</span><span class="sev alta">Alta</span><h3>Lote fantasma: un lote sin entrada de stock llega a «despachado» y se certifica</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>5.7</b> <code>AV:N/AC:L/PR:L/UI:R/S:U/C:N/I:H/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>batches + valorization_certificates</dd></div><div><dt>Rol</dt><dd>operario (crea y avanza) + admin (certifica)</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Operario crea un lote de 50.000 kg sin movimiento de recepción.</li><li>Lo avanza por las 4 etapas hasta dispatched.</li><li>El admin emite el certificado de ese lote.</li></ol>
+<pre><code>INSERT INTO batches(batch_number,material_id,supplier_id,initial_weight_kg,current_weight_kg) VALUES (&#x27;FANT&#x27;,&lt;m&gt;,&lt;sup&gt;,50000,50000);
+UPDATE batches SET status=&#x27;washing_sorting&#x27; … &#x27;shredded&#x27; … &#x27;pelletized&#x27; … &#x27;dispatched&#x27; WHERE batch_number=&#x27;FANT&#x27;;
+-- admin
+INSERT INTO valorization_certificates(...,batch_id,total_kg_valorized,...) SELECT ...,id,50000,... FROM batches WHERE batch_number=&#x27;FANT&#x27;;</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Sin entrada vigente en el kardex no hay certificado.</p><h4>Obtenido</h4><p class="obt">Certificado por 50.000 kg; entradas del lote: 0.</p>
+<h4>Impacto</h4><p>Certificado de valorización sin material real detrás: es el documento que el generador presenta para la Ley REP.</p><h4>Corrección</h4><p>005 §3: check_certificate_datos exige un movimiento reception del lote que no sea «Anula/Corrige» y no esté anulado.</p><h4>Prueba de regresión</h4><p>C02 falla; L08 (lote con entrada real) pasa.</p></div></div></article><article class="hal" id="gs-sec-013">
+<header><span class="cod">GS-SEC-013</span><span class="sev alta">Alta</span><h3>Toda cuenta nueva queda como operario ACTIVO</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>9.1 con 001</b> <code>Mismo vector que 001</code></dd></div>
+<div><dt>Activo</dt><dd>handle_new_user()</dd></div><div><dt>Rol</dt><dd>anónimo → cuenta nueva</dd></div><div><dt>Evidencia</dt><dd>Réplica (código de 003)</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Crear un usuario en auth.users.</li><li>Revisar su fila en profiles.</li></ol>
+<pre><code>SELECT role, is_active FROM profiles WHERE id = &lt;nuevo&gt;;   -- operator, true</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Cuenta nueva inactiva hasta que un admin la active.</p><h4>Obtenido</h4><p class="obt">operator, activo.</p>
+<h4>Impacto</h4><p>Si el registro se abre por error, o alguien obtiene una invitación, entra con acceso completo de operario.</p><h4>Corrección</h4><p>005 §4: handle_new_user deja is_active = false salvo la primera cuenta del sistema.</p><h4>Prueba de regresión</h4><p>A05 con 005: la cuenta nueva ve 0 empresas y 0 movimientos.</p></div></div></article><article class="hal" id="gs-sec-007">
+<header><span class="cod">GS-SEC-007</span><span class="sev media">Media</span><h3>Certificado con tipo de residuo, destino y QR vacíos</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>2.7</b> <code>AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:L/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>valorization_certificates</dd></div><div><dt>Rol</dt><dd>admin</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Como admin, emitir certificado de un lote despachado con waste_type = &#x27;&#x27;, qr = &#x27;&#x27; y destino NULL (D04).</li></ol>
+<pre><code>INSERT INTO valorization_certificates(...,waste_type,...,qr_verification_code,final_destination_product)
+SELECT ...,&#x27;&#x27;,...,&#x27;&#x27;,NULL FROM batches WHERE batch_number=&#x27;LOTE-2026-0825&#x27;;</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Rechazo por datos faltantes.</p><h4>Obtenido</h4><p class="obt">Se emite.</p>
+<h4>Impacto</h4><p>Certificado sin datos verificables; la app ya rechaza el PDF, pero la fila queda en la base.</p><h4>Corrección</h4><p>005 §3: RAISE si waste_type, final_destination_product o qr_verification_code vienen vacíos.</p><h4>Prueba de regresión</h4><p>D04 falla; L08 pasa.</p></div></div></article><article class="hal" id="gs-sec-008">
+<header><span class="cod">GS-SEC-008</span><span class="sev media">Media</span><h3>Fecha de recepción del lote la elige el cliente</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>4.3</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>batches.reception_date → Reportes.tsx:31</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Crear un lote con reception_date = 2020-01-01 (C01).</li></ol>
+<pre><code>INSERT INTO batches(batch_number,material_id,supplier_id,initial_weight_kg,current_weight_kg,reception_date)
+VALUES (&#x27;X&#x27;,&lt;m&gt;,&lt;sup&gt;,100,100,&#x27;2020-01-01&#x27;);</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>La fecha la pone el servidor.</p><h4>Obtenido</h4><p class="obt">Se guarda con fecha 2020.</p>
+<h4>Impacto</h4><p>Los reportes filtran lotes por esa fecha: se puede meter un lote en un mes ya cerrado.</p><h4>Corrección</h4><p>005 §2: trigger que fuerza reception_date = now() si no es admin (el admin la conserva para importar planillas).</p><h4>Prueba de regresión</h4><p>C01 con 005: fecha = hoy.</p></div></div></article><article class="hal" id="gs-sec-009">
+<header><span class="cod">GS-SEC-009</span><span class="sev media">Media</span><h3>Movimiento con lote de otro material (o anulado)</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>4.3</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>inventory_movements.batch_id</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Despachar 1 kg del material A indicando un lote del material B (B08).</li></ol>
+<pre><code>INSERT INTO inventory_movements(...,material_id,batch_id,...) VALUES (&#x27;X&#x27;,&#x27;dispatch&#x27;,&lt;A&gt;,(SELECT id FROM batches WHERE material_id&lt;&gt;&lt;A&gt; LIMIT 1),&lt;b&gt;,1,&#x27;x&#x27;);</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Rechazo.</p><h4>Obtenido</h4><p class="obt">Se guarda.</p>
+<h4>Impacto</h4><p>Rompe la trazabilidad lote → material → certificado.</p><h4>Corrección</h4><p>005 §1: el lote debe ser del mismo material (salvo production_output) y no estar [ANULADO].</p><h4>Prueba de regresión</h4><p>B08 falla.</p></div></div></article><article class="hal" id="gs-sec-010">
+<header><span class="cod">GS-SEC-010</span><span class="sev media">Media</span><h3>Movimiento en «ton» se suma como kg</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>4.3</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>inventory_movements.unit</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Insertar 5 con unit = &#x27;ton&#x27; para un material en kg (B09).</li></ol>
+<pre><code>INSERT INTO inventory_movements(...,to_warehouse_id,unit) VALUES (...,5,&#x27;x&#x27;,&lt;b&gt;,&#x27;ton&#x27;);</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>La unidad la impone el material.</p><h4>Obtenido</h4><p class="obt">Suma 5 a un stock en kg (debería ser 5.000 o rechazo).</p>
+<h4>Impacto</h4><p>Error ×1000 posible en cualquier cifra.</p><h4>Corrección</h4><p>005 §1: NEW.unit := unidad del material.</p><h4>Prueba de regresión</h4><p>B09 con 005: la fila queda en kg.</p></div></div></article><article class="hal" id="gs-sec-011">
+<header><span class="cod">GS-SEC-011</span><span class="sev media">Media</span><h3>Bodega sin límite de capacidad</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>4.3</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>warehouses.capacity_tons</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Sumar 5.000.000 kg a una bodega de 650 t (B10).</li></ol>
+<pre><code>-- ver B10 en ataque_operario.py</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Rechazo sobre la capacidad.</p><h4>Obtenido</h4><p class="obt">Bodega con 5.108 t de 650 t.</p>
+<h4>Impacto</h4><p>Cifras físicamente imposibles en el inventario.</p><h4>Corrección</h4><p>005 §1: trigger AFTER trg_z_capacidad_bodega. Ocupación real hoy: 11 %, 8 %, 17 % y 0 %; no afecta la operación.</p><h4>Prueba de regresión</h4><p>B10 y B10b fallan.</p></div></div></article><article class="hal" id="gs-sec-012">
+<header><span class="cod">GS-SEC-012</span><span class="sev media">Media</span><h3>El operario se cambia el nombre y firma movimientos como otra persona</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>4.3</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>profiles.full_name → inventory_movements.operator_name</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>UPDATE de su propio full_name a «Admin» (G02).</li><li>Registrar un movimiento.</li></ol>
+<pre><code>UPDATE profiles SET full_name=&#x27;Admin&#x27; WHERE id=auth.uid();
+-- el movimiento queda con operator_name = &#x27;Admin&#x27;</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Solo admin cambia nombres.</p><h4>Obtenido</h4><p class="obt">operator_name = Admin.</p>
+<h4>Impacto</h4><p>El kardex muestra un responsable falso (created_by sigue siendo el real).</p><h4>Corrección</h4><p>005 §4: protect_profile_fields protege también full_name.</p><h4>Prueba de regresión</h4><p>G02 falla.</p></div></div></article><article class="hal" id="gs-sec-014">
+<header><span class="cod">GS-SEC-014</span><span class="sev media">Media</span><h3>El operario lee y sube archivos en la carpeta de documentos (certificados)</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>5.4</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>storage.objects, bucket greenspot-docs</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica (políticas de 003)</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Listar storage.objects (H01).</li><li>Subir certificados/CERT-FALSO.pdf (H02).</li></ol>
+<pre><code>SELECT name FROM storage.objects;   -- ve certificados/CERT-ADMIN.pdf
+INSERT INTO storage.objects(bucket_id,name) VALUES (&#x27;greenspot-docs&#x27;,&#x27;certificados/CERT-FALSO.pdf&#x27;);</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>greenspot-docs solo admin.</p><h4>Obtenido</h4><p class="obt">Lee y sube.</p>
+<h4>Impacto</h4><p>Un PDF falso con nombre de certificado puede circular como oficial.</p><h4>Corrección</h4><p>005 §5: greenspot-docs solo is_admin(); greenspot-media para usuarios activos.</p><h4>Prueba de regresión</h4><p>H01 y H02 fallan como operario; L09 (foto en media) pasa.</p></div></div></article><article class="hal" id="gs-sec-015">
+<header><span class="cod">GS-SEC-015</span><span class="sev baja">Baja</span><h3>El operario ve RUT, correos y teléfonos de las empresas, y unit_cost_usd</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>4.3</b> <code>AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N</code></dd></div>
+<div><dt>Activo</dt><dd>stakeholders, materials_and_products</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Réplica</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>SELECT * FROM stakeholders; SELECT unit_cost_usd FROM materials_and_products;</li></ol>
+<pre><code>SELECT * FROM stakeholders;</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>El operario ve solo lo que necesita (nombre).</p><h4>Obtenido</h4><p class="obt">Ve todo.</p>
+<h4>Impacto</h4><p>Datos personales y comerciales expuestos a más personas de lo necesario.</p><h4>Corrección</h4><p>Propuesta, no incluida en 005: vista stakeholders_operario con id y nombre; columnas sensibles solo admin.</p><h4>Prueba de regresión</h4><p>Operario: SELECT rut FROM stakeholders → permiso denegado.</p></div></div></article><article class="hal" id="gs-sec-017">
+<header><span class="cod">GS-SEC-017</span><span class="sev baja">Baja</span><h3>Funciones de PIN sin uso siguen en la base</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>—</b> <code>—</code></dd></div>
+<div><dt>Activo</dt><dd>set_my_pin, verify_my_pin, reset_user_pin</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Esquema</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>La app ya no usa PIN (eliminado el 10-nov).</li></ol>
+<pre><code>-- \df public.*pin*</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Sin superficie sin uso.</p><h4>Obtenido</h4><p class="obt">Las 3 funciones existen y son ejecutables por authenticated.</p>
+<h4>Impacto</h4><p>Superficie de ataque sin beneficio.</p><h4>Corrección</h4><p>DROP FUNCTION de las tres (pendiente de aprobación; no está en 005).</p><h4>Prueba de regresión</h4><p>Llamarlas devuelve «function does not exist».</p></div></div></article><article class="hal" id="gs-sec-018">
+<header><span class="cod">GS-SEC-018</span><span class="sev baja">Baja</span><h3>El número de movimiento lo elige el cliente</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>—</b> <code>—</code></dd></div>
+<div><dt>Activo</dt><dd>inventory_movements.movement_number</dd></div><div><dt>Rol</dt><dd>operario</dd></div><div><dt>Evidencia</dt><dd>Esquema (observado, no explotado)</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>Insertar un movimiento con movement_number arbitrario.</li></ol>
+<pre><code>INSERT INTO inventory_movements(movement_number,…) VALUES (&#x27;MOV-LO-QUE-SEA&#x27;,…);</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>Numeración correlativa del servidor.</p><h4>Obtenido</h4><p class="obt">Acepta cualquier texto único.</p>
+<h4>Impacto</h4><p>Saltos y números engañosos en el kardex (no duplica: hay UNIQUE).</p><h4>Corrección</h4><p>Secuencia en un DEFAULT del servidor.</p><h4>Prueba de regresión</h4><p>Insertar sin movement_number → recibe MOV-AAAA-NNNNN.</p></div></div></article><article class="hal" id="gs-sec-016">
+<header><span class="cod">GS-SEC-016</span><span class="sev info">Info</span><h3>anon puede ejecutar is_admin(), is_active_user() y tope_camion()</h3></header>
+<dl class="meta"><div><dt>CVSS 3.1</dt><dd><b>0.0</b> <code>—</code></dd></div>
+<div><dt>Activo</dt><dd>funciones auxiliares</dd></div><div><dt>Rol</dt><dd>anónimo</dd></div><div><dt>Evidencia</dt><dd>Esquema</dd></div></dl>
+<div class="cuerpo"><div><h4>Reproducción</h4><ol><li>rpc/is_admin sin sesión.</li></ol>
+<pre><code>SELECT is_admin();  -- false</code></pre></div>
+<div class="lado"><h4>Esperado</h4><p>—</p><h4>Obtenido</h4><p class="obt">Devuelven false / 50000.</p>
+<h4>Impacto</h4><p>Sin impacto: no filtran datos.</p><h4>Corrección</h4><p>Opcional: REVOKE EXECUTE … FROM anon.</p><h4>Prueba de regresión</h4><p>—</p></div></div></article>
+</section>
+
+<section><h2>3. Matriz de autorización</h2>
+<p>Estado actual de la base en vivo según los SQL 001–004 (verificado en réplica; en vivo las lecturas coinciden). Rojo = permitido y no debería. Verde = correcto.</p>
+<div class="tabla"><table><thead><tr><th>Recurso</th><th>Operación</th><th>anon</th><th>operario</th><th>admin</th><th>Esperado</th><th>Riesgo</th></tr></thead><tbody><tr><th scope="row">Auth · signup</th><td>crear cuenta</td><td class="m mal">Permite</td><td class="m ok">—</td><td class="m ok">—</td><td>Solo por invitación</td><td>Crítico (001)</td></tr><tr><th scope="row">profiles</th><td>leer</td><td class="m ok">No</td><td class="m ok">Solo la propia</td><td class="m ok">Todas</td><td>Igual</td><td>—</td></tr><tr><th scope="row">profiles</th><td>cambiar rol / estado</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Permite</td><td>Igual</td><td>—</td></tr><tr><th scope="row">profiles</th><td>cambiar nombre</td><td class="m ok">No</td><td class="m mal">Permite</td><td class="m ok">Permite</td><td>Solo admin</td><td>Medio (012)</td></tr><tr><th scope="row">profiles</th><td>leer pin_hash</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Bloqueado</td><td>Igual</td><td>—</td></tr><tr><th scope="row">stakeholders</th><td>leer</td><td class="m ok">No</td><td class="m mal">Todo, con RUT</td><td class="m ok">Todo</td><td>Operario: solo nombre</td><td>Bajo (015)</td></tr><tr><th scope="row">stakeholders</th><td>crear / editar</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Permite</td><td>Igual</td><td>—</td></tr><tr><th scope="row">materials / warehouses</th><td>crear / editar</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Permite</td><td>Igual</td><td>—</td></tr><tr><th scope="row">inventory_stock</th><td>editar / borrar directo</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Bloqueado</td><td>Solo por kardex</td><td>—</td></tr><tr><th scope="row">inventory_movements</th><td>recepción ≤ 50 t con lote</td><td class="m ok">No</td><td class="m ok">Permite</td><td class="m ok">Permite</td><td>Igual</td><td>—</td></tr><tr><th scope="row">inventory_movements</th><td>despacho &gt; stock</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Bloqueado</td><td>Igual</td><td>—</td></tr><tr><th scope="row">inventory_movements</th><td>ajuste conteo / merma</td><td class="m ok">No</td><td class="m mal">Permite sin tope</td><td class="m ok">Permite</td><td>Solo admin</td><td>Crítico (002)</td></tr><tr><th scope="row">inventory_movements</th><td>producción</td><td class="m ok">No</td><td class="m mal">Sin consumo ni límite</td><td class="m ok">Permite</td><td>Consumo ≥ producto, mismo acto</td><td>Crítico (003)</td></tr><tr><th scope="row">inventory_movements</th><td>Corrige</td><td class="m ok">No</td><td class="m mal">Sin tope</td><td class="m ok">Permite</td><td>Operario ≤ 50 t</td><td>Alto (004)</td></tr><tr><th scope="row">inventory_movements</th><td>Anula ajeno / de ayer / doble</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Permite (ajeno)</td><td>Igual</td><td>—</td></tr><tr><th scope="row">inventory_movements</th><td>editar / borrar</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Bloqueado</td><td>Igual</td><td>—</td></tr><tr><th scope="row">batches</th><td>crear</td><td class="m ok">No</td><td class="m mal">Fecha libre</td><td class="m ok">Permite</td><td>Fecha del servidor</td><td>Medio (008)</td></tr><tr><th scope="row">batches</th><td>cambiar peso / saltar etapa / [ANULADO]</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Bloqueado</td><td>Igual</td><td>—</td></tr><tr><th scope="row">batches</th><td>borrar</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Permite</td><td>Igual</td><td>—</td></tr><tr><th scope="row">valorization_certificates</th><td>leer / emitir</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Permite</td><td>Igual</td><td>—</td></tr><tr><th scope="row">valorization_certificates</th><td>emitir de lote fantasma / sin datos</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m mal">Permite</td><td>Rechazo</td><td>Alto (006) / Medio (007)</td></tr><tr><th scope="row">valorization_certificates</th><td>segundo certificado del lote</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m ok">Bloqueado</td><td>Igual</td><td>—</td></tr><tr><th scope="row">storage · greenspot-docs</th><td>leer / subir</td><td class="m ok">No</td><td class="m mal">Permite</td><td class="m ok">Permite</td><td>Solo admin</td><td>Medio (014)</td></tr><tr><th scope="row">storage · greenspot-docs</th><td>borrar / sobrescribir</td><td class="m ok">No</td><td class="m ok">Bloqueado</td><td class="m no">No probado</td><td>Igual</td><td>—</td></tr><tr><th scope="row">storage · greenspot-media</th><td>leer / subir</td><td class="m ok">No</td><td class="m ok">Permite</td><td class="m ok">Permite</td><td>Igual</td><td>—</td></tr><tr><th scope="row">fn set_my_pin / verify / reset</th><td>ejecutar</td><td class="m ok">No</td><td class="m mal">Permite (sin uso)</td><td class="m mal">Permite</td><td>No existir</td><td>Bajo (017)</td></tr><tr><th scope="row">fn is_admin / is_active_user / tope</th><td>ejecutar</td><td class="m no">Permite</td><td class="m ok">Permite</td><td class="m ok">Permite</td><td>Indiferente</td><td>Info (016)</td></tr></tbody></table></div>
+</section>
+
+<section><h2>4. Plan de remediación</h2>
+<div class="plan">
+<div><h3>Inmediato (hoy)</h3><ol>
+<li>Desactivar el registro público en el panel de Supabase (001).</li>
+<li>Revisar en Authentication › Users que no existan cuentas desconocidas.</li>
+<li>Aplicar 005 con aprobación (002–004, 006–014).</li>
+<li>Ocultar al operario el flujo «Corrección de conteo» y <code>api.adjustStock</code>. La regla 002 los rechaza; si el operario debe declarar mermas, decidir otra vía: solicitud que aprueba el admin.</li></ol></div>
+<div><h3>Antes de producción</h3><ol>
+<li>Cuadrar el stock con 006 (saldo inicial) o partir con la base vacía (005 · GS-SEC-005).</li>
+<li>Limitar las columnas de empresas que ve el operario (015).</li>
+<li>Borrar las funciones de PIN (017).</li>
+<li>Numeración de movimientos en el servidor (018).</li></ol></div>
+<div><h3>Mejoras</h3><ul>
+<li>Bitácora de auditoría (quién, qué, cuándo) para lotes y certificados.</li>
+<li>Alerta al admin cuando un movimiento supere un umbral.</li>
+<li>Revisión periódica de usuarios activos.</li></ul></div>
+<div><h3>Pruebas para CI</h3><ul>
+<li><code>supabase/auditoria-2026-11-17/correr.sh con005</code>: debe terminar con 0 fallas.</li>
+<li>Cuadre stock = kardex: 0 filas descuadradas.</li>
+<li><code>GET /auth/v1/settings</code> → <code>disable_signup: true</code>.</li>
+<li>Cada regla con su caso positivo (L01–L09) y negativo (A–H) por rol: anon, operario, otro operario, admin.</li></ul></div>
+</div></section>
+
+<footer class="pie"><p><b>Archivos</b> (en el repo, sin commit): <code>supabase/auditoria-2026-11-17/</code> — 005_propuesta_cierre_operario.sql, 006_propuesta_saldo_inicial.sql, ataque_operario.py, stub_supabase.sql, correr.sh.</p>
+<p><b>Límites:</b> en vivo no se hicieron escrituras (regla de producción). La paridad de políticas en vivo se asume desde los SQL del repo; las lecturas en vivo coinciden. No se probó Storage como anónimo ni las Edge Functions (no hay).</p></footer>
+</main>
