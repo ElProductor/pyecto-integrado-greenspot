@@ -3,7 +3,7 @@
 const puppeteer = require('puppeteer-core');
 const fs = require('fs'), path = require('path');
 // Lee .env.local para no repetir la configuración (sin pisar variables ya definidas).
-try { for (const l of fs.readFileSync(path.join(__dirname, '..', '.env.local'), 'utf8').split('\n')) { const m = /^\s*([A-Z_]+)\s*=\s*(.*)$/.exec(l); if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim(); } } catch { /* sin .env.local */ }
+try { for (const l of fs.readFileSync(path.join(__dirname, '..', '.env.local'), 'utf8').split(/\r?\n/)) { const m = /^\s*([A-Z_]+)\s*=\s*(.*)$/.exec(l); if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim(); } } catch { /* sin .env.local */ }
 const CORREO = process.env.GREENSPOT_CORREO, CLAVE = process.env.GREENSPOT_CLAVE;
 if (!CORREO || !CLAVE) { console.error('Falta GREENSPOT_CORREO y GREENSPOT_CLAVE (cuenta de operario de prueba) en .env.local'); process.exit(1); }
 const OUT = path.join(__dirname, 'capturas'), URL = process.env.GREENSPOT_URL || 'http://localhost:5173/';
