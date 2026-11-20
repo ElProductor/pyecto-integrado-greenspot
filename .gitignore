@@ -27,5 +27,3 @@ dist-ssr
 .env
 .env.production
 
-# Capturas que dejan las pruebas
-pruebas/capturas/
