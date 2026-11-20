@@ -49,6 +49,8 @@ El tope funcionó: apareció «Revisa el peso: un camión no supera los 50.000 k
 
 La falla apareció al escribir `1,5` tecla a tecla: el campo terminó en `15`. Está en `src/componentes/Flujos.tsx:88`: la coma se saca del valor controlado y después el `5` se pega al `1`. Por eso C1 queda como **FAIL**. La prueba en un celular físico la dejamos para revisión manual.
 
+**Corrección posterior (20-nov):** el campo ahora acepta la coma decimal (hasta 2 decimales) y el punto de miles; `1,5` escrito tecla a tecla queda en 1,5 kg. Falta repetir C1 en pantalla para cerrarlo como PASS.
+
 ### C2 · Producción
 
 Entramos por «Registrar movimiento › Producción», elegimos un material con stock y pusimos 100 kg de entrada con 92 kg de salida. Esperábamos una merma de 8 kg / 8 %, que el stock se moviera en los dos materiales y que una salida mayor a la entrada quedara bloqueada.
