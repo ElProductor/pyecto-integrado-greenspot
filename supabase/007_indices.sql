@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- GREENSPOT · 007 · Índices de rendimiento
--- Se aplica después de 004 (independiente de las propuestas 005/006). Se puede correr de nuevo sin daño.
+-- Se aplica después de 004 (APLICADO en Supabase el 20-nov-2026). Se puede correr de nuevo sin daño.
 -- PostgreSQL indexa solo las claves primarias y los UNIQUE; las claves foráneas no.
 -- Estos índices cubren los filtros y uniones que usa la aplicación (kardex, lotes, certificados).
 -- No cambia tablas, columnas ni datos.

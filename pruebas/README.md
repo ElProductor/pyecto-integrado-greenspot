@@ -39,7 +39,7 @@ En Linux, si Chromium está en otra ruta, se define `CHROMIUM` con esa ruta. Tam
 
 Estos corrieron después. Primero revisamos lo que no escribe: bloqueamos `POST`, `PATCH` y `DELETE`, simulamos stock alto y descargamos archivos sin tocar los datos. Después, con autorización, guardamos datos de prueba: los lotes `LOTE-2026-0860`, `LOTE-2026-0861` y `LOTE-2026-0863`, una producción de 100 → 92 kg, una anulación y el certificado `CERT-REP-2026-0099`. No tocamos `supabase/` ni ejecutamos migraciones. Las credenciales fueron por variables de entorno y no quedaron en el repositorio.
 
-En resumen: C1 quedó con una falla, C2, C3, C5 y C6 pasaron, y C4 pasó con una observación.
+En resumen: C1 quedó con una falla (corregida y aprobada después, ver abajo), C2, C3, C5 y C6 pasaron, y C4 pasó con una observación.
 
 ### C1 · Registrar camión
 
@@ -49,7 +49,7 @@ El tope funcionó: apareció «Revisa el peso: un camión no supera los 50.000 k
 
 La falla apareció al escribir `1,5` tecla a tecla: el campo terminó en `15`. Está en `src/componentes/Flujos.tsx:88`: la coma se saca del valor controlado y después el `5` se pega al `1`. Por eso C1 queda como **FAIL**. La prueba en un celular físico la dejamos para revisión manual.
 
-**Corrección posterior (20-nov):** el campo ahora acepta la coma decimal (hasta 2 decimales) y el punto de miles; `1,5` escrito tecla a tecla queda en 1,5 kg. Falta repetir C1 en pantalla para cerrarlo como PASS.
+**Corrección posterior (20-nov):** el campo ahora acepta la coma decimal (hasta 2 decimales) y el punto de miles; `1,5` escrito tecla a tecla queda en 1,5 kg. C1 se repitió en pantalla el mismo día: una entrada de 1.250,5 kg se guardó exacta, y «1500,5» con tara «1,5» da un neto de 1.499 kg. C1 queda como **PASS**.
 
 ### C2 · Producción
 
