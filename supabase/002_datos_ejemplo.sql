@@ -64,10 +64,10 @@ VALUES
 ON CONFLICT (movement_number) DO NOTHING;
 
 -- 6. CERTIFICADOS LEY REP EMITIDOS
-INSERT INTO public.valorization_certificates (id, certificate_code, stakeholder_id, batch_id, issue_date, waste_type, total_kg_valorized, co2_avoided_kg, water_saved_liters, oil_saved_barrels, final_destination_product, signer_name, qr_verification_code)
+INSERT INTO public.valorization_certificates (id, certificate_code, stakeholder_id, batch_id, issue_date, waste_type, total_kg_valorized, co2_avoided_kg, water_saved_liters, oil_saved_barrels, final_destination_product, signer_name)
 VALUES
-    ('f0000000-0000-0000-0000-000000000001', 'CERT-REP-2026-0089', 'b0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', CURRENT_DATE - 4, 'Boyas y Flotadores Marinos HDPE en Desuso', 14500.00, 26825.00, 72500.00, 29.00, 'Pellet Reciclado Greenspot HDPE Inyección Negro', 'Benjamín González - Dirección General Greenspot', 'GREENSPOT-VERIFY-REP-0089-2026'),
-    ('f0000000-0000-0000-0000-000000000002', 'CERT-REP-2026-0094', 'b0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', CURRENT_DATE - 1, 'Cajas Térmicas Plumavit EPS Cosecha de Salmón', 5200.00, 10920.00, 31200.00, 15.60, 'Pellet Reciclado Greenspot PS Poliestireno / Molduras', 'Benjamín González - Dirección General Greenspot', 'GREENSPOT-VERIFY-REP-0094-2026')
+    ('f0000000-0000-0000-0000-000000000001', 'CERT-REP-2026-0089', 'b0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', CURRENT_DATE - 4, 'Boyas y Flotadores Marinos HDPE en Desuso', 14500.00, 26825.00, 72500.00, 29.00, 'Pellet Reciclado Greenspot HDPE Inyección Negro', 'Benjamín González - Dirección General Greenspot'),
+    ('f0000000-0000-0000-0000-000000000002', 'CERT-REP-2026-0094', 'b0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', CURRENT_DATE - 1, 'Cajas Térmicas Plumavit EPS Cosecha de Salmón', 5200.00, 10920.00, 31200.00, 15.60, 'Pellet Reciclado Greenspot PS Poliestireno / Molduras', 'Benjamín González - Dirección General Greenspot')
 ON CONFLICT (certificate_code) DO NOTHING;
 
 -- ==============================================================================

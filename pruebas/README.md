@@ -10,7 +10,7 @@ La idea era recorrer la app como administración y como operario sin modificar l
 
 Probamos el ingreso con clave mala y con la correcta, y que en cada pasada apareciera el rol esperado. Después pasamos por Lotes, Materiales y Movimientos con ambos roles, y por Empresas, Certificados, Reportes y Configuración solo con administración. En todas miramos que no aparecieran `undefined` ni `NaN`.
 
-En Lotes abrimos un lote para ver el recorrido y el QR, y confirmamos que el buscador filtrara. En Materiales revisamos la ficha técnica, el filtro de stock bajo el mínimo y el formulario nuevo con los campos vacíos. También abrimos una empresa y vimos que un RUT mal escrito se rechazaba.
+En Lotes abrimos un lote para ver el recorrido y el rótulo, y confirmamos que el buscador filtrara. En Materiales revisamos la ficha técnica, el filtro de stock bajo el mínimo y el formulario nuevo con los campos vacíos. También abrimos una empresa y vimos que un RUT mal escrito se rechazaba.
 
 Los flujos de registro también quedaron cubiertos: la tara mayor al bruto bloquea, el neto se calcula bien y el botón de guardar se habilita cuando corresponde; en `ajustes.cjs` queda probado el tope de 50.000 kg. En movimientos probamos una salida mayor al stock, un traslado a la misma bodega, el cierre del diálogo al clicar fuera y las pestañas de entradas, salidas, traslados, correcciones, producción y anulaciones.
 
@@ -77,9 +77,9 @@ Apareció «Patio al 105 % de su capacidad (841 de 800 t)». Trae bodega y porce
 
 ### C6 · Certificados
 
-Despachamos el `LOTE-2026-0861`, emitimos `CERT-REP-2026-0099` y descargamos `CERT-REP-2026-0099_Greenspot_Certificado.pdf`. Esperábamos que el PDF saliera desde un lote real, con código, lote, kilos, empresa, firma y QR, sin datos inventados.
+Despachamos el `LOTE-2026-0861`, emitimos `CERT-REP-2026-0099` y descargamos `CERT-REP-2026-0099_Greenspot_Certificado.pdf`. Esperábamos que el PDF saliera desde un lote real, con código, lote, kilos, empresa y firma, sin datos inventados.
 
-El PDF trae el código, el lote, los 1.000 kg y la empresa del registro. La generación usa los datos guardados del certificado; la revisión visual de firma y QR queda pendiente. **PASS.**
+El PDF trae el código, el lote, los 1.000 kg y la empresa del registro. La generación usa los datos guardados del certificado; la revisión visual de la firma queda pendiente. **PASS.**
 
 Las capturas automáticas están en `pruebas/capturas/`. Las de EV3 están en `pruebas/capturas-pantalla/ev3-*.png`, separadas de las de `npm run pruebas`. Ambas carpetas se suben al repositorio como evidencia. Los scripts temporales quedaron fuera del repositorio, en `C:\Users\jorge\AppData\Local\Temp\opencode\ev3-read.cjs` y `ev3-write.cjs`.
 

@@ -140,7 +140,7 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
             certificate_code: cod, stakeholder_id: l.supplier_id!, batch_id: l.id, issue_date: new Date().toISOString().slice(0, 10),
             waste_type: mt?.name || 'Plástico', total_kg_valorized: kg, co2_avoided_kg: Math.round(kg * Number(mt?.co2_factor_kg || 0)),
             water_saved_liters: 0, oil_saved_barrels: 0, /* sin fuente: no se calculan */ final_destination_product: 'Reciclaje mecánico (pellet)',
-            signer_name: c.usuario, signer_title: 'Administración Greenspot', qr_verification_code: `GREENSPOT-${cod}`
+            signer_name: c.usuario, signer_title: 'Administración Greenspot'
           });
           ultimo = nuevo.id;
         }

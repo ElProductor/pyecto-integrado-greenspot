@@ -169,7 +169,6 @@ CREATE TABLE IF NOT EXISTS public.valorization_certificates (
     signer_name VARCHAR(100) DEFAULT 'Benjamín González - Dirección Operaciones',
     signer_title VARCHAR(100) DEFAULT 'Greenspot / Red Resiter Economía Circular',
     pdf_storage_url TEXT, -- PDF generado y guardado en Supabase Storage
-    qr_verification_code VARCHAR(100) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

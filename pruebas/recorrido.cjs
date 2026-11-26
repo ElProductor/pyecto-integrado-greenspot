@@ -53,11 +53,11 @@ const comoAdmin = process.argv[2] !== 'op';
     await p.screenshot({ path: OUT + `/n-${comoAdmin ? 'adm' : 'op'}-${v}.png` });
   }
 
-  // Lotes: panel con QR
+  // Lotes: panel con rótulo
   await p.evaluate(() => [...document.querySelectorAll('.nav')].find(n => n.innerText.startsWith('Lotes')).click()); await w(400);
   await clic('Todos'); await w(300);
   await p.evaluate(() => document.querySelector('tr.clic td').click()); await w(900);
-  check('panel de lote con recorrido y QR', (await pan()).includes('Recorrido') && await p.$eval('.panel .qrimg', i => i.complete && i.naturalWidth > 0).catch(() => false));
+  check('panel de lote con recorrido y rótulo', (await pan()).includes('Recorrido') && (await pan()).includes('Rótulo') && !(await p.$('.panel .qrimg')));
   await p.screenshot({ path: OUT + `/n-${comoAdmin ? 'adm' : 'op'}-panel-lote.png` });
   await p.click('.panel .cerrar'); await w(300);
   // buscador

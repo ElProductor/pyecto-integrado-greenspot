@@ -13,11 +13,11 @@ Está hecha con React, TypeScript y Vite. Los datos viven en Supabase (PostgreSQ
 | Pantalla | Para qué sirve | Quién la ve |
 |---|---|---|
 | Inicio | Cifras de la planta, avisos (stock bajo el mínimo, lotes sin certificado) y lotes en proceso | Todos (el operario ve solo los lotes en proceso) |
-| Lotes | Registrar camiones, avanzar etapas, rótulo con QR | Todos |
+| Lotes | Registrar camiones, avanzar etapas, rótulo de identificación | Todos |
 | Materiales | Stock por bodega y conteos físicos | Todos (crear materiales: administración) |
 | Movimientos | Kardex con entradas, salidas, traslados, producción, correcciones y anulaciones | Todos |
 | Empresas | Generadoras de residuo y clientes, con los kilos de cada una | Administración |
-| Certificados | Emisión y PDF con QR de verificación | Administración |
+| Certificados | Emisión y PDF de valorización | Administración |
 | Reportes | Inventario, movimientos, lotes y certificados en Excel | Administración |
 | Configuración | Usuarios, roles y desactivar cuentas | Administración |
 
@@ -60,7 +60,10 @@ greenspot/
 │   ├── 001_esquema.sql
 │   ├── 002_datos_ejemplo.sql
 │   ├── 003_usuarios_y_permisos.sql
-│   └── 004_reglas_en_la_base.sql   Reglas de lotes, movimientos y certificados en la base
+│   ├── 004_reglas_en_la_base.sql   Reglas de lotes, movimientos y certificados en la base
+│   ├── 007_indices.sql             Índices para las consultas frecuentes
+│   ├── 008_contactos_solo_admin.sql Contactos de empresas solo para administración
+│   └── 009_quitar_qr.sql           Quita el campo de QR de los certificados
 ├── pruebas/                  Pruebas de punta a punta (no escriben en la base)
 └── .env.example              Plantilla de configuración
 ```
@@ -85,7 +88,7 @@ greenspot/
 
 ### Base de datos (proyecto nuevo)
 
-En Supabase › SQL Editor, ejecuta los scripts de `supabase/` en orden: 001, 002, 003 y 004.
+En Supabase › SQL Editor, ejecuta los scripts de `supabase/` en orden: 001, 002, 003, 004, 007, 008 y 009. En una base ya instalada alcanza con ejecutar el 009.
 
 El 002 carga bodegas, materiales y empresas de ejemplo. Los códigos de bodega (`BOD-PM-ACOPIO`, `BOD-PM-PLANTA`, …) los usa la app, así que si no cargas el 002, crea bodegas con esos mismos códigos.
 
