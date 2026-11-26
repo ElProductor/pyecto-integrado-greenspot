@@ -1,4 +1,3 @@
-import QRCode from 'qrcode';
 import { jsPDF } from 'jspdf';
 import type { ValorizationCertificate } from '../datos/tipos';
 
@@ -11,12 +10,6 @@ export function faltantesCertificado(cert: ValorizationCertificate): string[] {
   ];
   return f.filter(([, v]) => !v).map(([n]) => n);
 }
-
-/** Texto que lleva el QR: los datos del certificado, legibles con cualquier lector.
- *  shortcut: no hay página de verificación en línea; cuando exista, el QR debe apuntar a ella. */
-export const textoQr = (c: ValorizationCertificate) =>
-  [`Certificado ${c.certificate_code}`, `Emitido ${c.issue_date}`, `Generador ${c.stakeholder?.name} RUT ${c.stakeholder?.tax_id}`,
-    `Lote ${c.batch?.batch_number}`, `${c.waste_type}: ${Number(c.total_kg_valorized)} kg`, 'Greenspot SpA · Ley 20.920'].join('\n');
 
 const kg = (n: number) => Number(n).toLocaleString('es-CL', { maximumFractionDigits: 2 }) + ' kg';
 
@@ -70,12 +63,6 @@ export async function generateCertificatePdf(cert: ValorizationCertificate): Pro
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); negro();
   const decl = `Greenspot SpA declara que recibió el residuo indicado de la empresa generadora y lo valorizó mediante ${cert.final_destination_product.toLowerCase()}, en el marco de la Ley N° 20.920.`;
   doc.text(doc.splitTextToSize(decl, W - 2 * M), M, y);
-
-  // QR con los datos del certificado y firma
-  const qr = await QRCode.toDataURL(textoQr(cert), { margin: 1, width: 160 });
-  doc.addImage(qr, 'PNG', M, 236, 32, 32);
-  doc.setFontSize(8); gris();
-  doc.text('El código QR contiene los datos de este certificado.', M, 273);
 
   doc.setDrawColor(120, 128, 124); doc.line(W - 95, 256, W - M, 256);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10); negro();

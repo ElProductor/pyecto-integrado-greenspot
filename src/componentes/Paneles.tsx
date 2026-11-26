@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
+import React, { useState } from 'react';
 import { apiService, yaGuardado } from '../datos/api';
 import type { Stakeholder, MaterialProduct, Batch, InventoryMovement } from '../datos/tipos';
 import { generateCertificatePdf } from '../logica/certificadoPdf';
@@ -17,25 +16,19 @@ const Marco: React.FC<{ sub: string; tit: string; pie?: React.ReactNode; childre
   </>;
 };
 
-const useQR = (texto: string) => {
-  const [src, setSrc] = useState('');
-  useEffect(() => { QRCode.toDataURL(texto, { margin: 0, width: 140 }).then(setSrc).catch(() => setSrc('')); }, [texto]);
-  return src;
-};
-
-function imprimirRotulo(l: Batch, qr: string) {
+function imprimirRotulo(l: Batch) {
   const v = window.open('', '_blank', 'width=420,height=320');
   if (!v) return;
-  v.document.write(`<title>Rótulo ${l.batch_number}</title><body style="font-family:sans-serif;display:flex;gap:16px;align-items:center;padding:20px">
-    <img src="${qr}" width="120" height="120"><div><b style="font-size:20px">${l.batch_number}</b><div>${l.material?.name || ''}</div>
-    <div>${num(l.current_weight_kg)} kg · ${l.supplier?.name || ''}</div></div><script>onload=()=>{print();close()}<\/script>`);
+  v.document.write(`<title>Rótulo ${l.batch_number}</title><body style="font-family:sans-serif;padding:20px">
+    <b style="font-size:20px">${l.batch_number}</b><div>${l.material?.name || ''}</div>
+    <div>${num(l.current_weight_kg)} kg · ${l.supplier?.name || ''}</div><script>onload=()=>{print();close()}<\/script>`);
   v.document.close();
 }
 
 const PanelLote: React.FC<{ l: Batch }> = ({ l }) => {
-  const c = useApp(), qr = useQR(`GREENSPOT-${l.batch_number}`), s = siguiente(l), i = ETAPAS.indexOf(l.status), cert = certDe(c.D, l);
+  const c = useApp(), s = siguiente(l), i = ETAPAS.indexOf(l.status), cert = certDe(c.D, l);
   return <Marco sub="Lote" tit={l.batch_number} pie={<>
-    <button className="btn" disabled={!qr} onClick={() => imprimirRotulo(l, qr)}>Imprimir rótulo</button>
+    <button className="btn" onClick={() => imprimirRotulo(l)}>Imprimir rótulo</button>
     {s && <button className="btn pri" onClick={() => avanzar(c, l)}>{textoAvanzar(s)}</button>}
   </>}>
     {loteAnulado(l) && <div className="resultado mal" style={{ marginBottom: 16 }}><span>{l.notes}</span></div>}
@@ -54,7 +47,7 @@ const PanelLote: React.FC<{ l: Batch }> = ({ l }) => {
       <div key={e} className={k > i ? 'pend' : ''}><span>{NOMBRE_ETAPA[e]}</span><span>{k === 0 ? fecha(l.reception_date) : k === i ? fecha(l.updated_at) : k < i ? 'Hecho' : 'Pendiente'}</span></div>
     ))}</div>
     <h4>Rótulo</h4>
-    <div className="rotulo">{qr && <img className="qrimg" src={qr} alt="" />}<div><b>{l.batch_number}</b><span>{l.material?.name}</span><span>{num(l.current_weight_kg)} kg · {NOMBRE_ETAPA[l.status]}</span></div></div>
+    <div className="rotulo"><div><b>{l.batch_number}</b><span>{l.material?.name}</span><span>{num(l.current_weight_kg)} kg · {NOMBRE_ETAPA[l.status]}</span></div></div>
     <BotonesAjuste m={recepcionDe(c.D, l)} que="lote" />
   </Marco>;
 };

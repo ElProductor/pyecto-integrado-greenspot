@@ -128,7 +128,6 @@ export interface ValorizationCertificate {
   signer_name: string;
   signer_title?: string;
   pdf_storage_url?: string;
-  qr_verification_code: string;
   created_at?: string;
   // Joins
   stakeholder?: Stakeholder;
