@@ -173,7 +173,7 @@ const PanelMaterial: React.FC<{ m: MaterialProduct }> = ({ m }) => {
 };
 
 const PanelEmpresa: React.FC<{ e: Stakeholder }> = ({ e }) => {
-  const { D, setDlg } = useApp(), lotes = D.lotes.filter(l => l.supplier_id === e.id);
+  const { D, setDlg } = useApp(), lotes = D.lotes.filter(l => l.supplier_id === e.id && !loteAnulado(l));
   return <Marco sub={esGeneradora(e) ? 'Empresa generadora' : 'Cliente'} tit={e.name} pie={<button className="btn" onClick={() => setDlg({ t: 'form', nombre: 'empresa', id: e.id })}>Editar</button>}>
     <h4>Datos</h4>
     <dl className="datos"><dt>RUT</dt><dd>{e.tax_id}</dd><dt>Ciudad</dt><dd>{e.city || '—'}</dd><dt>Correo</dt><dd>{e.contact_email || '—'}</dd><dt>Teléfono</dt><dd>{e.contact_phone || '—'}</dd></dl>

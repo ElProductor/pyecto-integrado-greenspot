@@ -82,6 +82,6 @@ export function bloqueoAjuste(D: Datos, m: InventoryMovement, esAdmin: boolean, 
 export const recepcionDe = (D: Datos, l: Batch) => D.mov.find(x => x.batch_id === l.id && x.movement_type === 'reception' && !ajusteDe(x));
 
 /* ---------- empresas: kilos ---------- */
-export const kilosEntregados = (D: Ctx['D'], id: string) => D.lotes.filter(l => l.supplier_id === id).reduce((a, l) => a + Number(l.initial_weight_kg), 0);
+export const kilosEntregados = (D: Ctx['D'], id: string) => D.lotes.filter(l => l.supplier_id === id && !loteAnulado(l)).reduce((a, l) => a + Number(l.initial_weight_kg), 0);
 // Las salidas guardan el cliente en la referencia («Despacho a …»).
 export const kilosComprados = (D: Ctx['D'], nombre: string) => D.mov.filter(m => m.movement_type === 'dispatch' && m.unit === 'kg' && !anulado(D, m) && (m.reference_doc || '').includes(nombre)).reduce((a, m) => a + vigente(D, m), 0);
