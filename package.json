@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "pruebas": "node pruebas/recorrido.cjs && node pruebas/recorrido.cjs op && node pruebas/ajustes.cjs && node pruebas/ajustes.cjs op"
+    "pruebas": "node pruebas/recorrido.cjs && node pruebas/recorrido.cjs op && node pruebas/ajustes.cjs && node pruebas/ajustes.cjs op",
+    "pruebas:integral": "node --test pruebas/integral/01_formato_y_reglas.test.mjs pruebas/integral/02_planilla_pdf_reportes.test.mjs pruebas/integral/03_api_y_sql.test.mjs pruebas/integral/04_ui_e2e_edge.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",
