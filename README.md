@@ -61,10 +61,13 @@ greenspot/
 │   ├── 002_datos_ejemplo.sql
 │   ├── 003_usuarios_y_permisos.sql
 │   ├── 004_reglas_en_la_base.sql   Reglas de lotes, movimientos y certificados en la base
+│   ├── auditoria-2026-11-17/005_propuesta_cierre_operario.sql  Controles de operario, capacidad y certificados
 │   ├── 007_indices.sql             Índices para las consultas frecuentes
 │   ├── 008_contactos_solo_admin.sql Contactos de empresas solo para administración
-│   └── 009_quitar_qr.sql           Quita el campo de QR de los certificados
-├── pruebas/                  Pruebas de punta a punta (no escriben en la base)
+│   └── 009_quitar_qr.sql           Quita el campo QR y valida certificate_code
+├── pruebas/
+│   ├── recorrido.cjs / ajustes.cjs Pruebas E2E sin escritura (`npm run pruebas`)
+│   └── integral/                   Batería integral de 125 pruebas (`npm run pruebas:integral`)
 └── .env.example              Plantilla de configuración
 ```
 
@@ -86,28 +89,44 @@ greenspot/
    npm run build
    ```
 
-### Base de datos (proyecto nuevo)
+### Base de datos (proyecto en Supabase)
 
-En Supabase › SQL Editor, ejecuta los scripts de `supabase/` en orden: 001, 002, 003, 004, 007, 008 y 009. En una base ya instalada alcanza con ejecutar el 009.
+Instancia activa desplegada y verificada: proyecto **greenspot** (`zhztdovskiwagarqbdzs`, región `us-east-2`, PostgreSQL 17), con claves configuradas localmente en `.env.local` (fuera de Git).
 
-El 002 carga bodegas, materiales y empresas de ejemplo. Los códigos de bodega (`BOD-PM-ACOPIO`, `BOD-PM-PLANTA`, …) los usa la app, así que si no cargas el 002, crea bodegas con esos mismos códigos.
+En Supabase › SQL Editor, ejecuta los scripts de `supabase/` en este orden estricto:
+1. `001_esquema.sql` y `002_datos_ejemplo.sql`
+2. `003_usuarios_y_permisos.sql` *(ejecutar por separado antes de `004`/`005` para confirmar el valor `'count_adjustment_in'` del enum `movement_type_enum`)*
+3. `004_reglas_en_la_base.sql`
+4. `auditoria-2026-11-17/005_propuesta_cierre_operario.sql`
+5. `007_indices.sql`
+6. `008_contactos_solo_admin.sql`
+7. `009_quitar_qr.sql` *(en una base que ya tenía `001`–`008`, basta ejecutar `009_quitar_qr.sql` para eliminar `qr_verification_code` y actualizar `check_certificate_datos()`)*
+8. *(Opcional)* `auditoria-2026-11-17/006_propuesta_saldo_inicial.sql` si se desea regularizar los saldos iniciales de ejemplo en el kardex.
+
+El `002` carga 4 bodegas, 5 empresas, 11 materiales, 4 lotes, 4 movimientos y 2 certificados de ejemplo. Los códigos de bodega (`BOD-PM-ACOPIO`, `BOD-PM-PLANTA`, `BOD-PM-PELLET`, `BOD-DAL-CHILOE`) los usa la app, así que si no cargas el `002`, crea bodegas con esos mismos códigos.
 
 ### Usuarios
 
-- La primera cuenta que se crea queda como **administración**. Las siguientes entran como **operario**.
-- Las cuentas se crean en Supabase › Authentication › Add user. El rol se cambia desde *Configuración* en la app.
+- La **primera** cuenta que se crea entra automáticamente como **administración** activa.
+- Toda cuenta posterior creada en Supabase › Authentication › Add user entra como **operario inactivo** (`is_active = false`, control `GS-SEC-013` del script `005`) hasta que administración la active y ajuste su rol desde *Configuración* en la app.
 - Desactiva el registro público en Supabase › Authentication › Sign In / Providers › «Allow new users to sign up».
 
 ---
 
 ## Pruebas
 
-Recorren la app en un Chromium sin ventana, como administración y como operario. Bloquean cualquier escritura a la base, así que se pueden correr contra los datos reales. Después corrimos también los seis casos EV3, que sí dejaron datos de prueba con autorización. En `pruebas/README.md` está el relato completo, caso por caso.
+- **Batería integral sin credenciales externas (`125` pruebas):**
+  ```bash
+  npm run pruebas:integral
+  ```
+  Ejecuta las 4 suites de `pruebas/integral/` (`node --test` + `esbuild` + Edge/Chromium CDP sobre servidor local simulado) cubriendo lógica de negocio, planillas Excel, certificados PDF sin QR, API `@supabase/supabase-js`, validación SQL estática (`001`–`009`) y 25 flujos E2E en navegador real (`125/125` aprobadas).
+- **Recorridos sin escritura contra `npm run dev` (`95` checks):**
+  1. Agrega una cuenta de operario de prueba en `.env.local` (`GREENSPOT_CORREO` y `GREENSPOT_CLAVE`).
+  2. Con `npm run dev` abierto, ejecuta:
+     ```bash
+     npm run pruebas
+     ```
+     *(En Windows define `$env:CHROMIUM = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'`).*
+- **Validación en vivo contra Supabase (`11/11` aprobadas):** sobre `zhztdovskiwagarqbdzs` y `npm run dev` se validaron registro cerrado, RLS/CLS (`pin_hash` y `empresas()`), emisión real de certificado sin QR (`CERT-REP-2026-0095`), anulación atómica y exclusión de `[ANULADO]` en *Empresas*, dejando luego la base limpia en su estado inicial (ver `pruebas/README.md`).
 
-1. Agrega una cuenta de operario de prueba en `.env.local` (`GREENSPOT_CORREO` y `GREENSPOT_CLAVE`).
-2. Con `npm run dev` abierto, ejecuta:
-   ```bash
-   npm run pruebas
-   ```
-
-Las capturas quedan en `pruebas/capturas/` y las de las pruebas de pantalla en `pruebas/capturas-pantalla/`; ambas se suben al repositorio como evidencia. Si Chromium no está en `/usr/bin/chromium`, indica su ruta en la variable `CHROMIUM`.
+Las capturas automáticas quedan en `pruebas/capturas/` y las de EV3 en `pruebas/capturas-pantalla/`.

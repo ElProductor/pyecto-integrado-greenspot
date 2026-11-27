@@ -90,3 +90,8 @@ Las capturas automáticas están en `pruebas/capturas/`. Las de EV3 están en `p
 - Hacer que en Windows detecte Edge solo, para no definir `CHROMIUM` a mano.
 - Corregir la coma decimal en `src/componentes/Flujos.tsx:88`.
 - Revisar en Excel y en un celular físico los puntos que quedaron manuales.
+
+## Actualización posterior (27 de noviembre de 2026) · `pruebas/integral/` y Supabase definitiva
+
+- **Batería integral automatizada (`npm run pruebas:integral`):** incorporada en `pruebas/integral/` con `125/125` pruebas aprobadas (`01_formato_y_reglas.test.mjs`, `02_planilla_pdf_reportes.test.mjs`, `03_api_y_sql.test.mjs` y `04_ui_e2e_edge.test.mjs`), incluyendo regresión `!loteAnulado(l)` en `Empresas` y validación de `check_certificate_datos()` sin campo QR en `supabase/009_quitar_qr.sql`.
+- **Despliegue y verificación en vivo en nueva base Supabase (`greenspot` / `zhztdovskiwagarqbdzs`):** aplicados los scripts `001`–`005` y `007`–`009` completos, cerrado el registro público en Auth y validados `11/11` flujos en vivo (`PL-01` a `PL-11`) conectando `npm run dev` a `zhztdovskiwagarqbdzs` en Microsoft Edge headless (incluyendo RLS/CLS de ambos roles `admin`/`operator`, `empresas()`, emisión real de certificado sin QR, anulación atómica y exclusión de `[ANULADO]` en *Empresas*, producción `100 → 92 kg`, descarga Excel y bloqueo de cuenta desactivada), restaurando luego la base limpia a los datos de `002_datos_ejemplo.sql`.
