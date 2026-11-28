@@ -3,39 +3,41 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { loadTs, crearDatosBase, makeWorkDir, XLSX } from './helper.mjs';
+import { createRequire } from 'node:module';
+import { loadTs, crearDatosBase, makeWorkDir, NM } from './helper.mjs';
+
+const requireHere = createRequire(import.meta.url);
+const readXlsx = requireHere(path.join(NM, 'read-excel-file', 'node', 'index.cjs')).default;
 
 const pdfMod = loadTs('src/logica/certificadoPdf.ts');
 const repMod = loadTs('src/pantallas/Reportes.tsx');
+const excelMod = loadTs('src/logica/excel.ts');
 const planillaSoloLectura = loadTs('src/logica/planilla.ts');
 
-function libroDesdeHojas(hojas) {
-  const wb = XLSX.utils.book_new();
-  for (const [nombre, filas] of Object.entries(hojas)) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filas), nombre);
-  }
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-  return XLSX.read(buf, { cellDates: true });
+async function libroDesdeHojas(hojas) {
+  const bytes = await excelMod.generarBufferExcel(
+    Object.entries(hojas).map(([nombre, filas]) => ({ nombre, filas }))
+  );
+  return excelMod.leerHojasExcel(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 }
 
 test.describe('planilla.ts — validación e importación Excel (leerPlanilla)', () => {
   test('041 leerPlanilla acepta libro vacío sin errores ni altas', () => {
-    const wb = XLSX.utils.book_new();
-    const c = planillaSoloLectura.leerPlanilla(wb, crearDatosBase());
+    const c = planillaSoloLectura.leerPlanilla({}, crearDatosBase());
     assert.deepEqual(c, { materiales: [], empresas: [], lotes: [], ignoradas: 0, errores: [] });
   });
 
-  test('042 Inventario: ignora materiales cuyo código ya existe sin importar mayúsculas', () => {
+  test('042 Inventario: ignora materiales cuyo código ya existe sin importar mayúsculas', async () => {
     const D = crearDatosBase();
-    const wb = libroDesdeHojas({ Inventario: [{ 'Código': 'raw-hdpe-boy', Material: 'Duplicado', Tipo: 'HDPE' }] });
+    const wb = await libroDesdeHojas({ Inventario: [{ 'Código': 'raw-hdpe-boy', Material: 'Duplicado', Tipo: 'HDPE' }] });
     const c = planillaSoloLectura.leerPlanilla(wb, D);
     assert.equal(c.ignoradas, 1);
     assert.equal(c.materiales.length, 0);
     assert.equal(c.errores.length, 0);
   });
 
-  test('043 Inventario: ignora filas duplicadas dentro del mismo archivo', () => {
-    const wb = libroDesdeHojas({
+  test('043 Inventario: ignora filas duplicadas dentro del mismo archivo', async () => {
+    const wb = await libroDesdeHojas({
       Inventario: [
         { 'Código': 'NEW-01', Material: 'Mat 1', Tipo: 'PET' },
         { 'Código': 'new-01', Material: 'Mat 1 copia', Tipo: 'PET' },
@@ -46,8 +48,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.ignoradas, 1);
   });
 
-  test('044 Inventario: mapea Tipo "Otro" a OTHER y asigna stock 0 por defecto', () => {
-    const wb = libroDesdeHojas({ Inventario: [{ 'Código': 'NEW-OTR', Material: 'Mixto', Tipo: 'Otro' }] });
+  test('044 Inventario: mapea Tipo "Otro" a OTHER y asigna stock 0 por defecto', async () => {
+    const wb = await libroDesdeHojas({ Inventario: [{ 'Código': 'NEW-OTR', Material: 'Mixto', Tipo: 'Otro' }] });
     const c = planillaSoloLectura.leerPlanilla(wb, crearDatosBase());
     assert.equal(c.errores.length, 0);
     assert.equal(c.materiales[0].polymer_type, 'OTHER');
@@ -56,8 +58,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.materiales[0].category, 'raw_material');
   });
 
-  test('045 Inventario: traduce unidades u/unidades -> units y kilos -> kg', () => {
-    const wb = libroDesdeHojas({
+  test('045 Inventario: traduce unidades u/unidades -> units y kilos -> kg', async () => {
+    const wb = await libroDesdeHojas({
       Inventario: [
         { 'Código': 'U1', Material: 'Basurero', Tipo: 'PP', 'Categoría': 'Producto terminado', Unidad: 'u', 'Mínimo': 5 },
         { 'Código': 'K1', Material: 'Cable', Tipo: 'LDPE', Unidad: 'kilos' },
@@ -70,8 +72,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.materiales[1].unit, 'kg');
   });
 
-  test('046 Inventario: reporta errores con número de fila (+2) ante datos inválidos', () => {
-    const wb = libroDesdeHojas({
+  test('046 Inventario: reporta errores con número de fila (+2) ante datos inválidos', async () => {
+    const wb = await libroDesdeHojas({
       Inventario: [
         { 'Código': 'SIN-NOM', Material: '', Tipo: 'HDPE' },
         { 'Código': '', Material: 'Sin cod', Tipo: 'HDPE' },
@@ -88,9 +90,9 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.match(c.errores[5], /^Inventario, fila 7:/);
   });
 
-  test('047 Empresas: ignora empresa existente normalizando puntos y mayúsculas del RUT', () => {
+  test('047 Empresas: ignora empresa existente normalizando puntos y mayúsculas del RUT', async () => {
     const D = crearDatosBase();
-    const wb = libroDesdeHojas({
+    const wb = await libroDesdeHojas({
       Empresas: [
         { Nombre: 'Ecomaderas Repetida', RUT: '76980120-k', Tipo: 'Cliente' },
         { Nombre: 'Aqua Repetida', RUT: '96.852.140-5' },
@@ -101,8 +103,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.empresas.length, 0);
   });
 
-  test('048 Empresas: crea nueva empresa válida y asigna tipo generator_supplier por defecto', () => {
-    const wb = libroDesdeHojas({
+  test('048 Empresas: crea nueva empresa válida y asigna tipo generator_supplier por defecto', async () => {
+    const wb = await libroDesdeHojas({
       Empresas: [{ Nombre: 'Pesquera Sur', RUT: '76.111.222-3', Ciudad: 'Calbuco', Correo: 'hola@pesquera.cl', 'Teléfono': '+5691234' }],
     });
     const c = planillaSoloLectura.leerPlanilla(wb, crearDatosBase());
@@ -112,8 +114,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.empresas[0].city, 'Calbuco');
   });
 
-  test('049 Empresas: rechaza falta de nombre, RUT inválido, tipo inválido y correo inválido', () => {
-    const wb = libroDesdeHojas({
+  test('049 Empresas: rechaza falta de nombre, RUT inválido, tipo inválido y correo inválido', async () => {
+    const wb = await libroDesdeHojas({
       Empresas: [
         { Nombre: '', RUT: '76.111.222-3' },
         { Nombre: 'Mala RUT', RUT: '1234' },
@@ -126,9 +128,9 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.errores.length, 4);
   });
 
-  test('050 Lotes: ignora número de lote existente y rechaza número inexistente', () => {
+  test('050 Lotes: ignora número de lote existente y rechaza número inexistente', async () => {
     const D = crearDatosBase();
-    const wb = libroDesdeHojas({
+    const wb = await libroDesdeHojas({
       Lotes: [
         { Lote: 'lote-2026-0812', Material: 'Boyas HDPE', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 1000 },
         { Lote: 'LOTE-NO-EXISTE', Material: 'Boyas HDPE', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 1000 },
@@ -140,8 +142,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.match(c.errores[0], /no existe/);
   });
 
-  test('051 Lotes: permite recepción nueva vinculada a material y empresa creados en el mismo Excel', () => {
-    const wb = libroDesdeHojas({
+  test('051 Lotes: permite recepción nueva vinculada a material y empresa creados en el mismo Excel', async () => {
+    const wb = await libroDesdeHojas({
       Inventario: [{ 'Código': 'RAW-NEW-PP', Material: 'Cabos PP Nuevos', Tipo: 'PP' }],
       Empresas: [{ Nombre: 'Cultivos Marinos SA', RUT: '76.444.555-6', Tipo: 'Ambas' }],
       Lotes: [{ Lote: '', Material: 'Cabos PP Nuevos', Empresa: 'Cultivos Marinos SA', 'Kilos ingreso': 12500, Ingreso: '15-10-2026', Origen: 'Reloncaví' }],
@@ -154,8 +156,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.lotes[0].kilos, 12500);
   });
 
-  test('052 Lotes: rechaza material no materia-prima o en unidades y empresa solo cliente', () => {
-    const wb = libroDesdeHojas({
+  test('052 Lotes: rechaza material no materia-prima o en unidades y empresa solo cliente', async () => {
+    const wb = await libroDesdeHojas({
       Lotes: [
         { Lote: '', Material: 'No Existe', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 100 },
         { Lote: '', Material: 'Pellet HDPE Negro', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 100 },
@@ -168,8 +170,8 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.errores.length, 4);
   });
 
-  test('053 Lotes: rechaza kilos <= 0 o > 50.000 kg', () => {
-    const wb = libroDesdeHojas({
+  test('053 Lotes: rechaza kilos <= 0 o > 50.000 kg', async () => {
+    const wb = await libroDesdeHojas({
       Lotes: [
         { Lote: '', Material: 'Boyas HDPE', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 0 },
         { Lote: '', Material: 'Boyas HDPE', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 50001 },
@@ -179,10 +181,10 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
     assert.equal(c.errores.length, 2);
   });
 
-  test('054 Lotes: rechaza fechas futuras, texto inválido y fechas de calendario inexistentes (31-02)', () => {
+  test('054 Lotes: rechaza fechas futuras, texto inválido y fechas de calendario inexistentes (31-02)', async () => {
     const manana = new Date(Date.now() + 3 * 86400000);
     const strFuturo = `${String(manana.getDate()).padStart(2, '0')}-${String(manana.getMonth() + 1).padStart(2, '0')}-${manana.getFullYear()}`;
-    const wb = libroDesdeHojas({
+    const wb = await libroDesdeHojas({
       Lotes: [
         { Lote: '', Material: 'Boyas HDPE', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 500, Ingreso: '31-02-2026' },
         { Lote: '', Material: 'Boyas HDPE', Empresa: 'AquaChile S.A.', 'Kilos ingreso': 500, Ingreso: strFuturo },
@@ -226,7 +228,7 @@ test.describe('planilla.ts — validación e importación Excel (leerPlanilla)',
       const planillaLive = loadTs('src/logica/planilla.ts', { VITE_SUPABASE_URL: `http://127.0.0.1:${port}` });
       const D = crearDatosBase();
       const anio = new Date().getFullYear();
-      const wb = libroDesdeHojas({
+      const wb = await libroDesdeHojas({
         Empresas: [{ Nombre: 'Nueva Gen SA', RUT: '76.777.888-9', Tipo: 'Generadora' }],
         Inventario: [{ 'Código': 'RAW-NEW-X', Material: 'Cabos X', Tipo: 'PP' }],
         Lotes: [{ Lote: '', Material: 'Cabos X', Empresa: 'Nueva Gen SA', 'Kilos ingreso': 3500 }],
@@ -284,6 +286,7 @@ test.describe('certificadoPdf.ts — validaciones y generación real de PDF', ()
       assert.ok(txt.includes('Cermaq Chile'));
       assert.ok(txt.includes('LOTE-2026-0840'));
       assert.ok(txt.includes('CO2eq evitado'));
+      assert.ok(txt.includes('factores LCI'));
       assert.ok(!txt.includes('qr_verification_code'));
     } finally {
       process.chdir(prev);
@@ -387,18 +390,19 @@ test.describe('Reportes.tsx — períodos, agregaciones y exportación Excel', (
     assert.equal(R.certKg, 0);
   });
 
-  test('067 descargar genera Excel de Inventario con columnas por bodega y stock total', () => {
+  test('067 descargar genera Excel de Inventario con columnas por bodega y stock total', async () => {
     const dir = makeWorkDir('xlsx-inv-');
     const prev = process.cwd();
     process.chdir(dir);
     try {
       const D = crearDatosBase();
-      repMod.descargar('Inventario', D);
+      await repMod.descargar('Inventario', D);
       const files = fs.readdirSync(dir);
       assert.equal(files.length, 1);
       assert.match(files[0], /^Greenspot-Inventario-\d{4}-\d{2}-\d{2}\.xlsx$/);
-      const wb = XLSX.readFile(path.join(dir, files[0]));
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets.Inventario);
+      const buf = fs.readFileSync(path.join(dir, files[0]));
+      const wb = await excelMod.leerHojasExcel(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+      const rows = wb.Inventario;
       assert.equal(rows.length, D.mat.length);
       assert.equal(rows[0].Patio, 55000);
       assert.equal(rows[0].Dalcahue, 5000);
@@ -407,79 +411,77 @@ test.describe('Reportes.tsx — períodos, agregaciones y exportación Excel', (
     }
   });
 
-  test('068 descargar genera Excel de Lotes marcando "Anulado" en columna Etapa', () => {
+  test('068 descargar genera Excel de Lotes marcando "Anulado" en columna Etapa', async () => {
     const dir = makeWorkDir('xlsx-lotes-');
     const prev = process.cwd();
     process.chdir(dir);
     try {
-      repMod.descargar('Lotes', crearDatosBase());
-      const f = fs.readdirSync(dir)[0];
-      const wb = XLSX.readFile(path.join(dir, f));
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets.Lotes);
-      const anulado = rows.find(r => r.Lote === 'LOTE-2026-0830');
+      await repMod.descargar('Lotes', crearDatosBase());
+      const buf = fs.readFileSync(path.join(dir, fs.readdirSync(dir)[0]));
+      const wb = await excelMod.leerHojasExcel(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+      const anulado = wb.Lotes.find(r => r.Lote === 'LOTE-2026-0830');
       assert.equal(anulado.Etapa, 'Anulado');
     } finally {
       process.chdir(prev);
     }
   });
 
-  test('069 descargar genera Excel de Movimientos con Estado "Anulado" y signo correcto', () => {
+  test('069 descargar genera Excel de Movimientos con Estado "Anulado" y signo correcto', async () => {
     const dir = makeWorkDir('xlsx-mov-');
     const prev = process.cwd();
     process.chdir(dir);
     try {
-      repMod.descargar('Movimientos', crearDatosBase());
-      const wb = XLSX.readFile(path.join(dir, fs.readdirSync(dir)[0]));
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets.Movimientos);
-      const rev = rows.find(r => r.Referencia === 'Lote LOTE-2026-0830');
+      await repMod.descargar('Movimientos', crearDatosBase());
+      const buf = fs.readFileSync(path.join(dir, fs.readdirSync(dir)[0]));
+      const wb = await excelMod.leerHojasExcel(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+      const rev = wb.Movimientos.find(r => r.Referencia === 'Lote LOTE-2026-0830');
       assert.equal(rev.Estado, 'Anulado');
-      const desp = rows.find(r => String(r.Referencia).includes('Ecomaderas'));
+      const desp = wb.Movimientos.find(r => String(r.Referencia).includes('Ecomaderas'));
       assert.equal(desp.Cantidad, -12000);
     } finally {
       process.chdir(prev);
     }
   });
 
-  test('070 descargar genera hoja con mensaje "Sin registros en el período" cuando tabla está vacía', () => {
+  test('070 descargar genera hoja con mensaje "Sin registros en el período" cuando tabla está vacía', async () => {
     const dir = makeWorkDir('xlsx-empty-');
     const prev = process.cwd();
     process.chdir(dir);
     try {
       const D = { ...crearDatosBase(), cert: [] };
-      repMod.descargar('Certificados', D);
-      const wb = XLSX.readFile(path.join(dir, fs.readdirSync(dir)[0]));
-      const aoa = XLSX.utils.sheet_to_json(wb.Sheets.Certificados, { header: 1 });
-      assert.deepEqual(aoa, [['Sin registros en el período']]);
+      await repMod.descargar('Certificados', D);
+      const sheets = await readXlsx(path.join(dir, fs.readdirSync(dir)[0]));
+      assert.deepEqual(sheets[0].data, [['Sin registros en el período']]);
     } finally {
       process.chdir(prev);
     }
   });
 
-  test('071 descargarPlanilla en período abierto ("mes") incluye pestaña Inventario y Resumen', () => {
+  test('071 descargarPlanilla en período abierto ("mes") incluye pestaña Inventario y Resumen', async () => {
     const dir = makeWorkDir('xlsx-open-');
     const prev = process.cwd();
     process.chdir(dir);
     try {
-      repMod.descargarPlanilla('mes', crearDatosBase());
-      const wb = XLSX.readFile(path.join(dir, fs.readdirSync(dir)[0]));
-      assert.deepEqual(wb.SheetNames, ['Resumen', 'Por material', 'Movimientos', 'Lotes', 'Certificados', 'Inventario', 'Empresas']);
+      await repMod.descargarPlanilla('mes', crearDatosBase());
+      const sheets = await readXlsx(path.join(dir, fs.readdirSync(dir)[0]));
+      assert.deepEqual(sheets.map(s => s.sheet), ['Resumen', 'Por material', 'Movimientos', 'Lotes', 'Certificados', 'Inventario', 'Empresas']);
     } finally {
       process.chdir(prev);
     }
   });
 
-  test('072 descargarPlanilla en mes cerrado omite pestaña Inventario y nombra archivo con YYYY-MM', () => {
+  test('072 descargarPlanilla en mes cerrado omite pestaña Inventario y nombra archivo con YYYY-MM', async () => {
     const dir = makeWorkDir('xlsx-closed-');
     const prev = process.cwd();
     process.chdir(dir);
     try {
-      repMod.descargarPlanilla('2025-05', crearDatosBase());
+      await repMod.descargarPlanilla('2025-05', crearDatosBase());
       const f = fs.readdirSync(dir)[0];
       assert.equal(f, 'Greenspot-Planilla-2025-05.xlsx');
-      const wb = XLSX.readFile(path.join(dir, f));
-      assert.ok(!wb.SheetNames.includes('Inventario'));
-      const resumenRows = XLSX.utils.sheet_to_json(wb.Sheets.Resumen);
-      assert.match(String(resumenRows[0].Valor), /del 01-05-2025 al 31-05-2025|del 1-5-2025 al 31-5-2025/);
+      const buf = fs.readFileSync(path.join(dir, f));
+      const wb = await excelMod.leerHojasExcel(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+      assert.equal(Boolean(wb.Inventario), false);
+      assert.match(String(wb.Resumen[0].Valor), /del 01-05-2025 al 31-05-2025|del 1-5-2025 al 31-5-2025/);
     } finally {
       process.chdir(prev);
     }

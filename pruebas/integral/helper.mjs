@@ -16,7 +16,6 @@ if (!NM) throw new Error('No se encontró node_modules con esbuild; ejecuta `npm
 
 const requireHere = createRequire(import.meta.url);
 export const esbuild = requireHere(path.join(NM, 'esbuild', 'lib', 'main.js'));
-export const XLSX = requireHere(path.join(NM, 'xlsx'));
 
 const TMP_ROOT = path.join(__dirname, '.tmp');
 fs.mkdirSync(TMP_ROOT, { recursive: true });
@@ -89,7 +88,7 @@ export function buildBrowserBundle(mockBaseUrl) {
 export function crearDatosBase(ahora = new Date()) {
   const hoyISO = ahora.toISOString();
   const ayerISO = new Date(ahora.getTime() - 24 * 3600 * 1000).toISOString();
-  const fechaCorta = hoyISO.slice(0, 10);
+  const fechaCorta = ahora.toLocaleDateString('sv-SE');
 
   const bod = [
     { id: 'w1', code: 'BOD-PM-ACOPIO', name: 'Patio Acopio', location: 'Puerto Montt', manager_name: 'Rodrigo', capacity_tons: 800, is_active: true },

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { Ctx, useApp } from '../logica/contexto';
+import { descargarExcel, leerHojasExcel, type FilaExcel } from '../logica/excel';
 import { NOMBRE_ETAPA, certDe, nombreBod, bodegas, stockEn, claseMov, NOMBRE_MOV, signoMov, anulado, vigente, ajusteDe, loteAnulado, mismoSentido, ClaseMov } from '../logica/reglas';
 import { num, toneladas } from '../logica/formato';
 import { Titulo, Pestanas } from '../componentes/Comunes';
@@ -64,34 +64,35 @@ function filas(r: Reporte, D: D, mov = D.mov, lotes = D.lotes, cert = D.cert): R
         : cert.map(x => ({ 'N°': x.certificate_code, Empresa: x.stakeholder?.name, RUT: x.stakeholder?.tax_id, Lote: x.batch?.batch_number || '', Residuo: x.waste_type, Kilos: Number(x.total_kg_valorized), 'CO2eq evitado (kg)': Number(x.co2_avoided_kg), Fecha: x.issue_date }));
 }
 const hoyISO = () => new Date().toLocaleDateString('sv-SE'); // AAAA-MM-DD en hora local
-const hoja = (libro: XLSX.WorkBook, nombre: string, f: Record<string, unknown>[]) =>
-  XLSX.utils.book_append_sheet(libro, f.length ? XLSX.utils.json_to_sheet(f) : XLSX.utils.aoa_to_sheet([['Sin registros en el período']]), nombre);
 
-export function descargar(r: Reporte, D: D) {
-  const libro = XLSX.utils.book_new();
-  hoja(libro, r, filas(r, D));
-  XLSX.writeFile(libro, `Greenspot-${r}-${hoyISO()}.xlsx`);
+export async function descargar(r: Reporte, D: D) {
+  await descargarExcel([{ nombre: r, filas: filas(r, D) as FilaExcel[] }], `Greenspot-${r}-${hoyISO()}.xlsx`);
 }
 
 /** Un solo libro con el resumen del período y el detalle en pestañas, para usarlo como planilla. */
-export function descargarPlanilla(p: Periodo, D: D) {
-  const r = rangoDe(p), R = resumen(D, r), libro = XLSX.utils.book_new(), hasta = new Date(r[1].getTime() - 1);
-  hoja(libro, 'Resumen', [
-    { Dato: 'Período', Valor: `${nombrePeriodo(p)} (del ${r[0].toLocaleDateString('es-CL')} al ${hasta.toLocaleDateString('es-CL')})` },
-    { Dato: 'Nota', Valor: 'Anulaciones y correcciones cuentan en la fecha en que se hicieron; un mes cerrado no cambia después.' },
-    { Dato: 'Kilos recibidos', Valor: R.recibido },
-    { Dato: 'Kilos despachados', Valor: R.despachado },
-    { Dato: 'Lotes ingresados', Valor: R.nLotes },
-    { Dato: 'Certificados emitidos', Valor: R.cert.length },
-    { Dato: 'Kilos certificados', Valor: R.certKg },
-  ]);
-  hoja(libro, 'Por material', R.porMaterial);
-  hoja(libro, 'Movimientos', filas('Movimientos', D, R.mov));
-  hoja(libro, 'Lotes', filas('Lotes', D, D.mov, R.lotes));
-  hoja(libro, 'Certificados', filas('Certificados', D, D.mov, D.lotes, R.cert));
-  if (!esMes(p)) hoja(libro, 'Inventario', filas('Inventario', D)); // el inventario es el de hoy: no va en un mes cerrado
-  hoja(libro, 'Empresas', D.emp.map(e => ({ Nombre: e.name, RUT: e.tax_id, Tipo: NOMBRE_TIPO_EMP[e.type], Ciudad: e.city || '', Correo: e.contact_email || '', Teléfono: e.contact_phone || '' })));
-  XLSX.writeFile(libro, `Greenspot-Planilla-${esMes(p) ? p : nombrePeriodo(p).replace(' ', '-') + '-' + hoyISO()}.xlsx`);
+export async function descargarPlanilla(p: Periodo, D: D) {
+  const r = rangoDe(p), R = resumen(D, r), hasta = new Date(r[1].getTime() - 1);
+  const hojas: { nombre: string; filas: FilaExcel[] }[] = [
+    {
+      nombre: 'Resumen',
+      filas: [
+        { Dato: 'Período', Valor: `${nombrePeriodo(p)} (del ${r[0].toLocaleDateString('es-CL')} al ${hasta.toLocaleDateString('es-CL')})` },
+        { Dato: 'Nota', Valor: 'Anulaciones y correcciones cuentan en la fecha en que se hicieron; un mes cerrado no cambia después.' },
+        { Dato: 'Kilos recibidos', Valor: R.recibido },
+        { Dato: 'Kilos despachados', Valor: R.despachado },
+        { Dato: 'Lotes ingresados', Valor: R.nLotes },
+        { Dato: 'Certificados emitidos', Valor: R.cert.length },
+        { Dato: 'Kilos certificados', Valor: R.certKg },
+      ],
+    },
+    { nombre: 'Por material', filas: R.porMaterial as FilaExcel[] },
+    { nombre: 'Movimientos', filas: filas('Movimientos', D, R.mov) as FilaExcel[] },
+    { nombre: 'Lotes', filas: filas('Lotes', D, D.mov, R.lotes) as FilaExcel[] },
+    { nombre: 'Certificados', filas: filas('Certificados', D, D.mov, D.lotes, R.cert) as FilaExcel[] },
+  ];
+  if (!esMes(p)) hojas.push({ nombre: 'Inventario', filas: filas('Inventario', D) as FilaExcel[] }); // el inventario es el de hoy: no va en un mes cerrado
+  hojas.push({ nombre: 'Empresas', filas: D.emp.map(e => ({ Nombre: e.name, RUT: e.tax_id, Tipo: NOMBRE_TIPO_EMP[e.type], Ciudad: e.city || '', Correo: e.contact_email || '', Teléfono: e.contact_phone || '' })) });
+  await descargarExcel(hojas, `Greenspot-Planilla-${esMes(p) ? p : nombrePeriodo(p).replace(' ', '-') + '-' + hoyISO()}.xlsx`);
 }
 
 export const Reportes: React.FC = () => {
@@ -101,7 +102,7 @@ export const Reportes: React.FC = () => {
   const archivo = useRef<HTMLInputElement>(null);
   async function subir(f?: File) {
     if (!f) return;
-    try { setCarga(leerPlanilla(XLSX.read(await f.arrayBuffer(), { cellDates: true }), D)); }
+    try { setCarga(leerPlanilla(await leerHojasExcel(await f.arrayBuffer()), D)); }
     catch { aviso('No se pudo leer el archivo. Sube un Excel (.xlsx) descargado desde aquí.'); }
     if (archivo.current) archivo.current.value = '';
   }
@@ -118,9 +119,9 @@ export const Reportes: React.FC = () => {
   const rep: [Reporte, string][] = [['Inventario', 'Kilos por material y bodega'], ['Movimientos', 'Entradas, salidas, traslados y correcciones'], ['Lotes', 'Recorrido y kilos de cada lote'], ['Certificados', 'Para declarar en la Ley REP']];
   return <>
     <Titulo t="Reportes">
-      <input ref={archivo} type="file" accept=".xlsx,.xls" hidden onChange={e => subir(e.target.files?.[0])} />
+      <input ref={archivo} type="file" accept=".xlsx" hidden onChange={e => subir(e.target.files?.[0])} />
       <button className="btn" onClick={() => archivo.current?.click()}>Subir planilla</button>
-      <button className="btn pri" onClick={() => { descargarPlanilla(p, D); aviso(`Descargada la planilla de «${nombrePeriodo(p)}» en Excel`); }}>Descargar planilla</button>
+      <button className="btn pri" onClick={() => { void descargarPlanilla(p, D).then(() => aviso(`Descargada la planilla de «${nombrePeriodo(p)}» en Excel`)); }}>Descargar planilla</button>
     </Titulo>
     {carga && <>
       <h2>Carga desde Excel</h2>
@@ -156,6 +157,6 @@ export const Reportes: React.FC = () => {
         <tbody>{R.porMaterial.map(r => <tr key={r.Material}><td>{r.Material}</td><td className="der tn">{num(r['Recibido (kg)'])}</td><td className="der tn">{num(r['Despachado (kg)'])}</td><td className="der">{r.Lotes}</td></tr>)}</tbody></table>}
     <h2>Reportes sueltos</h2>
     <table><thead><tr><th>Reporte</th><th className="opc">Contenido</th><th /></tr></thead>
-      <tbody>{rep.map(([r, d]) => <tr key={r}><td>{r}</td><td className="opc sec">{d}</td><td className="der"><button className="btn chico" onClick={() => { descargar(r, D); aviso(`Descargado «${r}» en Excel`); }}>Descargar Excel</button></td></tr>)}</tbody></table>
+      <tbody>{rep.map(([r, d]) => <tr key={r}><td>{r}</td><td className="opc sec">{d}</td><td className="der"><button className="btn chico" onClick={() => { void descargar(r, D).then(() => aviso(`Descargado «${r}» en Excel`)); }}>Descargar Excel</button></td></tr>)}</tbody></table>
   </>;
 };

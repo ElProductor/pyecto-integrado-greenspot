@@ -122,8 +122,11 @@ export interface ValorizationCertificate {
   waste_type: string;
   total_kg_valorized: number;
   co2_avoided_kg: number;
-  water_saved_liters: number;
-  oil_saved_barrels: number;
+  water_saved_liters?: number | null;
+  oil_saved_barrels?: number | null;
+  status?: 'vigente' | 'anulado';
+  annulled_reason?: string | null;
+  annulled_at?: string | null;
   final_destination_product: string;
   signer_name: string;
   signer_title?: string;

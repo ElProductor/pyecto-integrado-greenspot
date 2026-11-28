@@ -8,7 +8,7 @@ export const NOMBRE_ETAPA: Record<BatchStatus, string> = { received: 'Patio', wa
 export const loteAnulado = (l: Batch) => (l.notes || '').startsWith('[ANULADO]');
 export const siguiente = (l: Batch): BatchStatus | null => { if (loteAnulado(l)) return null; const i = ETAPAS.indexOf(l.status); return i >= 0 && i < 4 ? ETAPAS[i + 1] : null; };
 export const enProceso = (l: Batch) => l.status !== 'dispatched' && !loteAnulado(l);
-export const certDe = (D: Datos, l: Batch) => D.cert.find(c => c.batch_id === l.id);
+export const certDe = (D: Datos, l: Batch) => D.cert.find(c => c.batch_id === l.id && c.status !== 'anulado');
 export const sinCert = (D: Datos) => D.lotes.filter(l => l.status === 'dispatched' && !loteAnulado(l) && l.supplier_id && !certDe(D, l));
 export const textoAvanzar = (s: BatchStatus) => 'Pasar a ' + (s === 'dispatched' ? 'Despacho' : NOMBRE_ETAPA[s]);
 
@@ -75,7 +75,7 @@ export function bloqueoAjuste(D: Datos, m: InventoryMovement, esAdmin: boolean, 
   if (ajusteDe(m)) return 'Es un ajuste: se corrige desde el registro original.';
   if (anulado(D, m)) return 'Este registro ya está anulado.';
   if (!m.from_warehouse_id && !m.to_warehouse_id) return 'Este registro no tiene bodega asociada; no se puede ajustar desde la app.';
-  if (m.batch_id && D.cert.some(c => c.batch_id === m.batch_id)) return 'El lote ya tiene certificado emitido; no se puede cambiar.';
+  if (m.batch_id && D.cert.some(c => c.batch_id === m.batch_id && c.status !== 'anulado')) return 'El lote ya tiene certificado emitido; no se puede cambiar.';
   if (!esAdmin && (m.created_by !== uid || !hoy(m.created_at))) return 'Solo puedes corregir tus propios registros del día. Pídeselo a administración.';
   return null;
 }

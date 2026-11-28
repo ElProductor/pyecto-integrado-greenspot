@@ -3,12 +3,12 @@ import { apiService, yaGuardado } from '../datos/api';
 import type { Batch, InventoryMovement } from '../datos/tipos';
 import { Flujo, Ctx, useApp } from '../logica/contexto';
 import { num, cant } from '../logica/formato';
-import { sinCert, nombreBod, bodegas, stockEn, esGeneradora, esCliente, TOPE_CAMION } from '../logica/reglas';
+import { sinCert, enProceso, nombreBod, bodegas, stockEn, esGeneradora, esCliente, TOPE_CAMION } from '../logica/reglas';
 
 type Op = { v: string; b: string; s?: string; d?: string; off?: boolean };
 type Tipo = 'op' | 'peso' | 'kilos' | 'conteo' | 'obtenido' | 'multi';
 interface Paso { t: string; tipo: Tipo; k?: keyof W; op?: (w: W) => Op[] }
-interface W { f: Flujo; paso: number; mat?: string; emp?: string; cli?: string; desde?: string; hacia?: string; bod?: string; prod?: string; bruto: string; tara: string; kilos: string; obt: string; sel: Record<string, boolean> }
+interface W { f: Flujo; paso: number; mat?: string; emp?: string; cli?: string; desde?: string; hacia?: string; bod?: string; prod?: string; lote?: string; bruto: string; tara: string; kilos: string; obt: string; sel: Record<string, boolean> }
 
 const NOMBRE: Record<Flujo, string> = { mov: 'Registrar movimiento', camion: 'Registrar camión', salida: 'Salida de material', mover: 'Traslado entre bodegas', contar: 'Corrección de conteo', prod: 'Registrar producción', cert: 'Emitir certificado' };
 // Texto del campo («1.500,5» o «1500,5») a número: la coma es el decimal.
@@ -82,6 +82,7 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
     if (k === 'f') { setW({ f: v as Flujo, paso: 0, bruto: '', tara: '', kilos: '', obt: '', sel: {} }); return; }
     const nw = { ...w, [k]: v, paso: w.paso + 1 };
     if (k === 'desde') delete nw.hacia;
+    if (k === 'mat') delete nw.lote;
     if (k === 'emp' && w.f === 'cert') nw.sel = Object.fromEntries(sinCert(D).filter(l => l.supplier_id === v).map(l => [l.id, true]));
     setW(nw);
   };
@@ -120,8 +121,8 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
         // Consumo y producto en una sola llamada: si falla uno, no se guarda ninguno. La merma es la diferencia.
         const t = clave, ref = `Producción PRD-${t}`, merma = kg(w.kilos) - kg(w.obt);
         await apiService.recordMovements([
-          { ...base, movement_number: `PRC-${t}`, movement_type: 'production_intake', from_warehouse_id: w.desde!, quantity: kg(w.kilos), reference_doc: ref, notes: `Merma ${num(merma)} kg` },
-          { ...base, movement_number: `PRD-${t}`, material_id: w.prod!, movement_type: 'production_output', to_warehouse_id: w.hacia!, quantity: kg(w.obt), reference_doc: ref, notes: `Merma ${num(merma)} kg` }
+          { ...base, batch_id: w.lote || null, movement_number: `PRC-${t}`, movement_type: 'production_intake', from_warehouse_id: w.desde!, quantity: kg(w.kilos), reference_doc: ref, notes: `Merma ${num(merma)} kg` },
+          { ...base, batch_id: w.lote || null, movement_number: `PRD-${t}`, material_id: w.prod!, movement_type: 'production_output', to_warehouse_id: w.hacia!, quantity: kg(w.obt), reference_doc: ref, notes: `Merma ${num(merma)} kg` }
         ] as Omit<InventoryMovement, 'id'>[]);
         msg = `Producción registrada: ${num(kg(w.obt))} kg obtenidos, merma ${num(merma)} kg`;
       } else if (w.f === 'contar') {
@@ -139,7 +140,7 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
           const nuevo = await apiService.createCertificate({
             certificate_code: cod, stakeholder_id: l.supplier_id!, batch_id: l.id, issue_date: new Date().toISOString().slice(0, 10),
             waste_type: mt?.name || 'Plástico', total_kg_valorized: kg, co2_avoided_kg: Math.round(kg * Number(mt?.co2_factor_kg || 0)),
-            water_saved_liters: 0, oil_saved_barrels: 0, /* sin fuente: no se calculan */ final_destination_product: 'Reciclaje mecánico (pellet)',
+            water_saved_liters: null, oil_saved_barrels: null, /* sin fuente: no se calculan */ final_destination_product: 'Reciclaje mecánico (pellet)',
             signer_name: c.usuario, signer_title: 'Administración Greenspot'
           });
           ultimo = nuevo.id;
@@ -179,7 +180,14 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
         </div>}
         {p.tipo === 'kilos' && <div className={'campo' + (e.mal ? ' mal' : '')}><label htmlFor="kilos">Cantidad ({u === 'units' ? 'unidades' : u})</label>
           <input id="kilos" inputMode="decimal" autoFocus value={w.kilos} onChange={numero('kilos')} /><div className="ayuda">Disponible: {cant(e.mx || 0, u)}</div></div>}
-        {p.tipo === 'obtenido' && <div className={'campo' + (e.mal ? ' mal' : '')}><label htmlFor="obt">Kilos de producto</label><input id="obt" inputMode="decimal" autoFocus value={w.obt} onChange={numero('obt')} /></div>}
+        {p.tipo === 'obtenido' && <div className={'campo' + (e.mal ? ' mal' : '')}><label htmlFor="obt">Kilos de producto</label><input id="obt" inputMode="decimal" autoFocus value={w.obt} onChange={numero('obt')} />
+          {D.lotes.some(l => enProceso(l) && l.material_id === w.mat) && <>
+            <label htmlFor="lote-prod" style={{ marginTop: 10 }}>Lote en proceso (opcional — descuenta merma del lote)</label>
+            <select id="lote-prod" value={w.lote || ''} onChange={ev => setW({ ...w, lote: ev.target.value || undefined })}>
+              <option value="">Sin vincular a lote específico</option>
+              {D.lotes.filter(l => enProceso(l) && l.material_id === w.mat).map(l => <option key={l.id} value={l.id}>{l.batch_number} · {num(l.current_weight_kg)} kg</option>)}
+            </select>
+          </>}</div>}
         {p.tipo === 'conteo' && <div className="campo"><label htmlFor="kilos">Cantidad contada ({u === 'units' ? 'unidades' : u})</label><input id="kilos" inputMode="decimal" autoFocus value={w.kilos} onChange={numero('kilos')} /></div>}
         {p.tipo === 'multi' && <><div className="opciones">{lotesCert().map(l => (
           <label key={l.id} className="opcion"><span><input type="checkbox" checked={!!w.sel[l.id]} onChange={ev => setW({ ...w, sel: { ...w.sel, [l.id]: ev.target.checked } })} /> {l.batch_number} · {l.material?.name}</span><small className="tn">{num(l.current_weight_kg)} kg</small></label>

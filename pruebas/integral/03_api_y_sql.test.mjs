@@ -242,8 +242,8 @@ test.describe('SQL y código fuente — integridad de esquema, seguridad y cero 
   const leerSql = f => fs.readFileSync(path.join(REPO, 'supabase', f), 'utf8');
   const reg = loadTs('src/logica/reglas.ts');
 
-  test('089 existen los 7 scripts SQL activos esperados', () => {
-    for (const f of ['001_esquema.sql', '002_datos_ejemplo.sql', '003_usuarios_y_permisos.sql', '004_reglas_en_la_base.sql', '007_indices.sql', '008_contactos_solo_admin.sql', '009_quitar_qr.sql']) {
+  test('089 existen los 8 scripts SQL activos esperados', () => {
+    for (const f of ['001_esquema.sql', '002_datos_ejemplo.sql', '003_usuarios_y_permisos.sql', '004_reglas_en_la_base.sql', '007_indices.sql', '008_contactos_solo_admin.sql', '009_quitar_qr.sql', '010_ajustes_auditoria.sql']) {
       assert.equal(fs.existsSync(path.join(REPO, 'supabase', f)), true, f);
     }
   });
@@ -315,9 +315,21 @@ test.describe('SQL y código fuente — integridad de esquema, seguridad y cero 
     }
   });
 
-  test('099 package.json ya no declara dependencia de qrcode', () => {
+  test('099 package.json no declara qrcode ni xlsx y usa versiones saneadas', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'));
     assert.equal(Boolean(pkg.dependencies?.qrcode), false);
+    assert.equal(Boolean(pkg.dependencies?.xlsx), false);
+    assert.equal(Boolean(pkg.dependencies?.['read-excel-file']), true);
+    assert.equal(Boolean(pkg.dependencies?.['write-excel-file']), true);
+  });
+
+  test('099b 010_ajustes_auditoria.sql implementa NULL ambiental, anular_certificado, merma lote y FOR UPDATE en bodega', () => {
+    const sql = leerSql('010_ajustes_auditoria.sql');
+    assert.match(sql, /ALTER COLUMN water_saved_liters DROP NOT NULL/i);
+    assert.match(sql, /CREATE OR REPLACE FUNCTION public\.anular_certificado/i);
+    assert.match(sql, /CREATE OR REPLACE FUNCTION public\.aplicar_merma_lote/i);
+    assert.match(sql, /total_kg_valorized > lote\.current_weight_kg/i);
+    assert.match(sql, /PERFORM 1 FROM public\.warehouses WHERE id = NEW\.to_warehouse_id FOR UPDATE/i);
   });
 
   test('100 README.md y archivos de entrada index.html / main.tsx existen', () => {

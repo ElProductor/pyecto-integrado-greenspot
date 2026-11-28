@@ -50,7 +50,8 @@ greenspot/
 │   │   ├── contexto.ts       Estado compartido de la app (datos cargados, panel, diálogo)
 │   │   ├── formato.ts        Números, kilos, fechas y RUT
 │   │   ├── reglas.ts         Reglas del negocio: etapas, stock, anular/corregir, topes
-│   │   └── certificadoPdf.ts PDF del certificado
+│   │   ├── certificadoPdf.ts PDF del certificado
+│   │   └── excel.ts          Lectura y exportación Excel (`read-excel-file` / `write-excel-file`)
 │   └── datos/
 │       ├── supabase.ts       Conexión
 │       ├── api.ts            Todas las lecturas y escrituras a la base
@@ -64,10 +65,11 @@ greenspot/
 │   ├── auditoria-2026-11-17/005_propuesta_cierre_operario.sql  Controles de operario, capacidad y certificados
 │   ├── 007_indices.sql             Índices para las consultas frecuentes
 │   ├── 008_contactos_solo_admin.sql Contactos de empresas solo para administración
-│   └── 009_quitar_qr.sql           Quita el campo QR y valida certificate_code
+│   ├── 009_quitar_qr.sql           Quita el campo QR y valida certificate_code
+│   └── 010_ajustes_auditoria.sql   LCI nullable, anulación de certificados, merma de lote y lock de capacidad
 ├── pruebas/
 │   ├── recorrido.cjs / ajustes.cjs Pruebas E2E sin escritura (`npm run pruebas`)
-│   └── integral/                   Batería integral de 125 pruebas (`npm run pruebas:integral`)
+│   └── integral/                   Batería integral de 126 pruebas (`npm run pruebas:integral`)
 └── .env.example              Plantilla de configuración
 ```
 
@@ -101,7 +103,8 @@ En Supabase › SQL Editor, ejecuta los scripts de `supabase/` en este orden est
 5. `007_indices.sql`
 6. `008_contactos_solo_admin.sql`
 7. `009_quitar_qr.sql` *(en una base que ya tenía `001`–`008`, basta ejecutar `009_quitar_qr.sql` para eliminar `qr_verification_code` y actualizar `check_certificate_datos()`)*
-8. *(Opcional)* `auditoria-2026-11-17/006_propuesta_saldo_inicial.sql` si se desea regularizar los saldos iniciales de ejemplo en el kardex.
+8. `010_ajustes_auditoria.sql` *(permite `NULL` en agua/petróleo no estimados, agrega `status` y `anular_certificado()`, descuenta merma del lote y agrega bloqueo pesimista por bodega)*
+9. `auditoria-2026-11-17/006_propuesta_saldo_inicial.sql` *(regulariza en el kardex mediante `SALDO-INI-*` los saldos iniciales cargados por `002`)*
 
 El `002` carga 4 bodegas, 5 empresas, 11 materiales, 4 lotes, 4 movimientos y 2 certificados de ejemplo. Los códigos de bodega (`BOD-PM-ACOPIO`, `BOD-PM-PLANTA`, `BOD-PM-PELLET`, `BOD-DAL-CHILOE`) los usa la app, así que si no cargas el `002`, crea bodegas con esos mismos códigos.
 
@@ -115,11 +118,11 @@ El `002` carga 4 bodegas, 5 empresas, 11 materiales, 4 lotes, 4 movimientos y 2 
 
 ## Pruebas
 
-- **Batería integral sin credenciales externas (`125` pruebas):**
+- **Batería integral sin credenciales externas (`126` pruebas):**
   ```bash
   npm run pruebas:integral
   ```
-  Ejecuta las 4 suites de `pruebas/integral/` (`node --test` + `esbuild` + Edge/Chromium CDP sobre servidor local simulado) cubriendo lógica de negocio, planillas Excel, certificados PDF sin QR, API `@supabase/supabase-js`, validación SQL estática (`001`–`009`) y 25 flujos E2E en navegador real (`125/125` aprobadas).
+  Ejecuta las 4 suites de `pruebas/integral/` (`node --test` + `esbuild` + Edge/Chromium CDP sobre servidor local simulado) cubriendo lógica de negocio, planillas Excel, certificados PDF sin QR, API `@supabase/supabase-js`, validación SQL estática (`001`–`010`) y 25 flujos E2E en navegador real (`126/126` aprobadas).
 - **Recorridos sin escritura contra `npm run dev` (`95` checks):**
   1. Agrega una cuenta de operario de prueba en `.env.local` (`GREENSPOT_CORREO` y `GREENSPOT_CLAVE`).
   2. Con `npm run dev` abierto, ejecuta:

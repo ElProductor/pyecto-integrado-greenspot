@@ -1,7 +1,7 @@
-import * as XLSX from 'xlsx';
 import { apiService } from '../datos/api';
 import type { MaterialProduct, Stakeholder, Batch, CategoryType, PolymerType, StakeholderType } from '../datos/tipos';
 import type { Datos } from './contexto';
+import type { LibroExcel, FilaExcel } from './excel';
 import { bodegas, TOPE_CAMION } from './reglas';
 import { RUT_OK } from './formato';
 
@@ -13,7 +13,7 @@ export const NOMBRE_CAT: Record<CategoryType, string> = { raw_material: 'Materia
 export const NOMBRE_TIPO_EMP: Record<StakeholderType, string> = { generator_supplier: 'Generadora', buyer_customer: 'Cliente', both: 'Ambas' };
 const POLIMEROS: PolymerType[] = ['HDPE', 'LDPE', 'PP', 'EPS', 'PET', 'OTHER'];
 
-type Fila = Record<string, unknown>;
+type Fila = FilaExcel;
 const txt = (v: unknown) => (v == null ? '' : String(v)).trim();
 const clave = (v: unknown) => txt(v).toLowerCase();
 const rutLimpio = (v: unknown) => txt(v).replace(/\./g, '').toUpperCase();
@@ -34,9 +34,9 @@ function leerFecha(v: unknown): string | null {
   return d.getDate() === +m[1] && d <= new Date() ? d.toISOString() : null;
 }
 
-export function leerPlanilla(libro: XLSX.WorkBook, D: Datos): Carga {
+export function leerPlanilla(libro: LibroExcel, D: Datos): Carga {
   const c: Carga = { materiales: [], empresas: [], lotes: [], ignoradas: 0, errores: [] };
-  const hoja = (n: string): Fila[] => (libro.Sheets[n] ? XLSX.utils.sheet_to_json<Fila>(libro.Sheets[n], { defval: '' }) : []);
+  const hoja = (n: string): Fila[] => libro[n] || [];
   const err = (h: string, i: number, t: string) => c.errores.push(`${h}, fila ${i + 2}: ${t}`); // +2: encabezado y base 1
 
   hoja('Inventario').forEach((f, i) => {

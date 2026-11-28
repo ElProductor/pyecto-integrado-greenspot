@@ -62,7 +62,11 @@ export async function generateCertificatePdf(cert: ValorizationCertificate): Pro
 
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); negro();
   const decl = `Greenspot SpA declara que recibió el residuo indicado de la empresa generadora y lo valorizó mediante ${cert.final_destination_product.toLowerCase()}, en el marco de la Ley N° 20.920.`;
-  doc.text(doc.splitTextToSize(decl, W - 2 * M), M, y);
+  const declLineas = doc.splitTextToSize(decl, W - 2 * M);
+  doc.text(declLineas, M, y);
+  y += declLineas.length * 5.5 + 4;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); gris();
+  doc.text(doc.splitTextToSize('Estimación ambiental referencial basada en factores LCI estándar; no constituye una medición directa de Greenspot SpA ni sustituye declaraciones oficiales ante el RETC.', W - 2 * M), M, y);
 
   doc.setDrawColor(120, 128, 124); doc.line(W - 95, 256, W - M, 256);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10); negro();
