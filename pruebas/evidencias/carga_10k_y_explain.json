@@ -1,0 +1,81 @@
+{
+  "carga_10k": {
+    "timestamp": "2026-11-28T02:20:04.100Z",
+    "projectUrl": "https://yeqinvkstzzugijgeurv.supabase.co",
+    "counts": {
+      "movementsRead": 10015,
+      "movementsPages": 11,
+      "movementsReadMs": 5774,
+      "batchesRead": 1504,
+      "batchesPages": 2,
+      "batchesReadMs": 1014,
+      "certsRead": 302,
+      "certsReadMs": 242
+    },
+    "excelExport": {
+      "exportedRows": 10015,
+      "verifiedRoundtripRows": 10015,
+      "exportMs": 851,
+      "bytes": 371580,
+      "mb": 0.35
+    },
+    "concurrentBurst20": {
+      "okCount": 20,
+      "errors": [],
+      "totalWallMs": 811,
+      "p50Ms": 793,
+      "p95Ms": 810,
+      "maxMs": 810
+    },
+    "postBurstCheck": {
+      "movs_cnt": 10035,
+      "batches_cnt": 1504,
+      "certs_cnt": 302,
+      "descuadres_kardex": 0,
+      "descuadres_catalogo": 0
+    }
+  },
+  "explain_analyze": {
+    "project_id": "yeqinvkstzzugijgeurv",
+    "verified_at": "2026-11-27T23:18:19-03:00",
+    "dataset_counts": {
+      "inventory_movements": 10015,
+      "batches": 1504,
+      "valorization_certificates": 302
+    },
+    "queries": [
+      {
+        "name": "kardex_por_material_recientes_50",
+        "index_used": "idx_mov_material_fecha",
+        "planning_ms": 0.704,
+        "execution_ms": 0.361,
+        "shared_hit": 52,
+        "plan_summary": "Limit -> Index Scan using idx_mov_material_fecha on inventory_movements"
+      },
+      {
+        "name": "kardex_paginado_todo_1000",
+        "index_used": "idx_mov_fecha",
+        "planning_ms": 0.649,
+        "execution_ms": 1.325,
+        "shared_hit": 1004,
+        "plan_summary": "Limit -> Incremental Sort (Sort Key: created_at DESC, id DESC) -> Index Scan using idx_mov_fecha on inventory_movements"
+      },
+      {
+        "name": "stock_por_bodega",
+        "index_used": "idx_stock_bodega",
+        "planning_ms": 0.481,
+        "execution_ms": 0.2,
+        "shared_hit": 2,
+        "plan_summary": "Bitmap Heap Scan on inventory_stock -> Bitmap Index Scan on idx_stock_bodega"
+      },
+      {
+        "name": "lotes_recientes_50",
+        "index_used": "idx_lote_fecha",
+        "planning_ms": 0.668,
+        "execution_ms": 0.146,
+        "shared_hit": 6,
+        "plan_summary": "Limit -> Index Scan using idx_lote_fecha on batches"
+      }
+    ]
+  }
+}

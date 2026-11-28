@@ -8,7 +8,7 @@ import { sinCert, enProceso, nombreBod, bodegas, stockEn, esGeneradora, esClient
 type Op = { v: string; b: string; s?: string; d?: string; off?: boolean };
 type Tipo = 'op' | 'peso' | 'kilos' | 'conteo' | 'obtenido' | 'multi';
 interface Paso { t: string; tipo: Tipo; k?: keyof W; op?: (w: W) => Op[] }
-interface W { f: Flujo; paso: number; mat?: string; emp?: string; cli?: string; desde?: string; hacia?: string; bod?: string; prod?: string; lote?: string; bruto: string; tara: string; kilos: string; obt: string; sel: Record<string, boolean> }
+interface W { f: Flujo; paso: number; mat?: string; emp?: string; cli?: string; desde?: string; hacia?: string; bod?: string; prod?: string; lote?: string; bruto: string; tara: string; kilos: string; obt: string; sel: Record<string, boolean>; confCert?: boolean }
 
 const NOMBRE: Record<Flujo, string> = { mov: 'Registrar movimiento', camion: 'Registrar camión', salida: 'Salida de material', mover: 'Traslado entre bodegas', contar: 'Corrección de conteo', prod: 'Registrar producción', cert: 'Emitir certificado' };
 // Texto del campo («1.500,5» o «1500,5») a número: la coma es el decimal.
@@ -65,6 +65,7 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
   const P = pasos(c, w.f), p = P[w.paso], ult = w.paso === P.length - 1;
   const m = D.mat.find(x => x.id === w.mat), u = m?.unit || 'kg';
   const lotesCert = () => sinCert(D).filter(l => l.supplier_id === w.emp);
+  const tieneProd = (l: Batch) => D.mov.some(mv => mv.batch_id === l.id && mv.movement_type === 'production_output');
   const disponible = () => (w.desde && w.mat ? stockEn(D, w.mat, w.desde) : 0);
 
   // Estado del paso actual: si se puede seguir y qué mostrar abajo.
@@ -74,16 +75,17 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
     if (p.tipo === 'kilos') { const k = kg(w.kilos) || 0, mx = disponible(); return { ok: k > 0 && k <= mx, n: k, mx, mal: k > mx ? `Solo hay ${cant(mx, u)} disponibles` : '' }; }
     if (p.tipo === 'obtenido') { const k = kg(w.kilos) || 0, o = kg(w.obt) || 0; return { ok: o > 0 && o <= k, n: o, mx: k, mal: o > k ? `No puede salir más de lo que entró (${cant(k, u)})` : '' }; }
     if (p.tipo === 'conteo') { const sis = stockEn(D, w.mat!, w.bod!), n = w.kilos === '' ? null : kg(w.kilos); return { ok: n !== null && n !== sis, n, sis }; }
-    const s = lotesCert().filter(l => w.sel[l.id]); return { ok: s.length > 0, lotes: s, n: s.reduce((a, l) => a + Number(l.current_weight_kg), 0) };
+    const s = lotesCert().filter(l => w.sel[l.id]), faltaProd = s.some(l => !tieneProd(l));
+    return { ok: s.length > 0 && (!faltaProd || !!w.confCert), lotes: s, n: s.reduce((a, l) => a + Number(l.current_weight_kg), 0), faltaProd };
   })();
 
   const cerrar = () => c.setDlg(null);
   const elegir = (k: keyof W, v: string) => {
-    if (k === 'f') { setW({ f: v as Flujo, paso: 0, bruto: '', tara: '', kilos: '', obt: '', sel: {} }); return; }
+    if (k === 'f') { setW({ f: v as Flujo, paso: 0, bruto: '', tara: '', kilos: '', obt: '', sel: {}, confCert: false }); return; }
     const nw = { ...w, [k]: v, paso: w.paso + 1 };
     if (k === 'desde') delete nw.hacia;
     if (k === 'mat') delete nw.lote;
-    if (k === 'emp' && w.f === 'cert') nw.sel = Object.fromEntries(sinCert(D).filter(l => l.supplier_id === v).map(l => [l.id, true]));
+    if (k === 'emp' && w.f === 'cert') { nw.sel = Object.fromEntries(sinCert(D).filter(l => l.supplier_id === v).map(l => [l.id, true])); nw.confCert = false; }
     setW(nw);
   };
   const atras = () => (w.paso && !(pre && w.paso === 1) ? setW({ ...w, paso: w.paso - 1 }) : cerrar());
@@ -162,7 +164,7 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
     p.tipo === 'obtenido' && ['Entran', cant(kg(w.kilos), u)]
   ].filter(Boolean) as [string, string][];
 
-  const e = est as { ok: boolean; n?: number | null; mx?: number; sis?: number; mal?: string };
+  const e = est as { ok: boolean; n?: number | null; mx?: number; sis?: number; mal?: string; faltaProd?: boolean };
   return (
     <div className="dlg" onKeyDown={ev => ev.key === 'Enter' && p.tipo !== 'op' && siguiente()}>
       <div className="dc"><small>{NOMBRE[w.f]}{P.length > 1 ? ` · Paso ${w.paso + 1} de ${P.length}` : ''}</small><h3>{p.t}</h3></div>
@@ -187,11 +189,12 @@ export const FlujoDlg: React.FC<{ f: Flujo; pre?: string }> = ({ f, pre }) => {
               <option value="">Sin vincular a lote específico</option>
               {D.lotes.filter(l => enProceso(l) && l.material_id === w.mat).map(l => <option key={l.id} value={l.id}>{l.batch_number} · {num(l.current_weight_kg)} kg</option>)}
             </select>
+            {!w.lote && <div className="ayuda">Sin lote vinculado: la merma afectará solo el stock por bodega y no rebajará el peso certificable del lote.</div>}
           </>}</div>}
         {p.tipo === 'conteo' && <div className="campo"><label htmlFor="kilos">Cantidad contada ({u === 'units' ? 'unidades' : u})</label><input id="kilos" inputMode="decimal" autoFocus value={w.kilos} onChange={numero('kilos')} /></div>}
         {p.tipo === 'multi' && <><div className="opciones">{lotesCert().map(l => (
-          <label key={l.id} className="opcion"><span><input type="checkbox" checked={!!w.sel[l.id]} onChange={ev => setW({ ...w, sel: { ...w.sel, [l.id]: ev.target.checked } })} /> {l.batch_number} · {l.material?.name}</span><small className="tn">{num(l.current_weight_kg)} kg</small></label>
-        ))}</div><div style={{ height: 12 }} /></>}
+          <label key={l.id} className="opcion"><span><input type="checkbox" checked={!!w.sel[l.id]} onChange={ev => setW({ ...w, confCert: false, sel: { ...w.sel, [l.id]: ev.target.checked } })} /> {l.batch_number} · {l.material?.name}<span className="desc">{tieneProd(l) ? 'Con producción vinculada' : 'Sin producción vinculada — verificar peso neto'}</span></span><small className="tn">{num(l.current_weight_kg)} kg</small></label>
+        ))}</div>{e.faltaProd && <label className="opcion" style={{ marginBottom: 10 }}><span><input id="conf-cert-peso" type="checkbox" checked={!!w.confCert} onChange={ev => setW({ ...w, confCert: ev.target.checked })} /> Confirmo que el peso a certificar refleja la masa neta valorizada (descontando mermas no vinculadas)</span></label>}<div style={{ height: 12 }} /></>}
 
         {p.tipo === 'peso' && <div className={'resultado' + (e.mal ? ' mal' : '')}><span>{e.mal || 'Neto'}</span><b className="tn">{num(Math.max(0, e.n || 0))} kg</b></div>}
         {p.tipo === 'kilos' && <div className={'resultado' + (e.mal ? ' mal' : '')}><span>{e.mal || 'Quedarán en esa bodega'}</span><b className="tn">{cant(Math.max(0, (e.mx || 0) - (e.n || 0)), u)}</b></div>}

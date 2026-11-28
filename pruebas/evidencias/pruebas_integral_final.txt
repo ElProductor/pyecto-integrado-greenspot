@@ -1,0 +1,173 @@
+Command exited with code 0.
+
+Command output:
+
+> greenspot@1.0.0 pruebas:integral
+> node --test pruebas/integral/01_formato_y_reglas.test.mjs pruebas/integral/02_planilla_pdf_reportes.test.mjs pruebas/integral/03_api_y_sql.test.mjs pruebas/integral/04_ui_e2e_edge.test.mjs
+
+▶ formato.ts — números, unidades, fechas y RUT
+  ✔ 001 num formatea miles en es-CL (30.6825ms)
+  ✔ 002 num limita a 2 decimales y redondea (0.3502ms)
+  ✔ 003 num devuelve 0 para NaN, null o undefined (0.5762ms)
+  ✔ 004 uni traduce units a u y big_bag a maxisacos (0.2129ms)
+  ✔ 005 cant combina cantidad y unidad abreviada (0.3821ms)
+  ✔ 006 toneladas convierte kg a t con 1 decimal (0.3908ms)
+  ✔ 007 fecha retorna guión largo si falta fecha (0.3344ms)
+  ✔ 008 fecha muestra "Hoy" para marca temporal actual (16.3498ms)
+  ✔ 009 fecha muestra "Ayer" para marca temporal de ayer (0.7693ms)
+  ✔ 010 fecha muestra día/mes sin año si es del año actual (1.3762ms)
+  ✔ 011 fecha incluye año de 2 dígitos si es de otro año (0.9699ms)
+  ✔ 012 RUT_OK acepta formatos chilenos válidos con/sin puntos y K (0.4827ms)
+  ✔ 013 RUT_OK rechaza formatos inválidos (0.1918ms)
+✔ formato.ts — números, unidades, fechas y RUT (55.0391ms)
+▶ reglas.ts — lotes, etapas y certificados
+  ✔ 014 ETAPAS contiene las 5 etapas secuenciales de proceso (1.7782ms)
+  ✔ 015 NOMBRE_ETAPA incluye etiqueta para las 6 variantes BatchStatus (1.1548ms)
+  ✔ 016 loteAnulado detecta prefijo exacto [ANULADO] (0.9043ms)
+  ✔ 017 siguiente avanza paso a paso hasta dispatched (1.0964ms)
+  ✔ 018 siguiente devuelve null en dispatched, quarantine y lote anulado (0.6372ms)
+  ✔ 019 enProceso excluye despachados y anulados (4.1014ms)
+  ✔ 020 textoAvanzar usa Despacho al final y NOMBRE_ETAPA en intermedias (0.3133ms)
+  ✔ 021 certDe encuentra el certificado asociado a un lote (0.5128ms)
+  ✔ 022 sinCert retorna solo despachados, no anulados, con proveedor y sin cert (0.572ms)
+✔ reglas.ts — lotes, etapas y certificados (12.0436ms)
+▶ reglas.ts — bodegas, stock, alertas y kilos de empresas
+  ✔ 023 nombreBod usa nombres cortos conocidos y fallback para nuevas bodegas (0.3864ms)
+  ✔ 024 bodegas filtra inactivas y respeta orden operativo (0.6732ms)
+  ✔ 025 stockEn devuelve cantidad numérica o 0 (0.5098ms)
+  ✔ 026 bajoMinimo es estricto (< minimum_stock) (0.2163ms)
+  ✔ 027 bodegasLlenas detecta >= 90% solo de materiales en kg e ignora units y capacidad 0 (0.7952ms)
+  ✔ 028 kgEnPlanta suma únicamente materiales en kg (0.4829ms)
+  ✔ 029 esGeneradora y esCliente clasifican generator, buyer y both (0.5153ms)
+  ✔ 030 kilosEntregados excluye lotes [ANULADO] (regresión 1.888.888 + 69.710) (0.6152ms)
+  ✔ 031 kilosComprados excluye anulaciones y aplica correcciones (1.3877ms)
+✔ reglas.ts — bodegas, stock, alertas y kilos de empresas (6.3879ms)
+▶ reglas.ts — movimientos, kardex, contrapartidas y permisos
+  ✔ 032 claseMov distingue los 7 tipos de movimiento más Anula y Corrige (0.6862ms)
+  ✔ 033 signoMov asigna +1, 0 y -1 según impacto en stock (0.4096ms)
+  ✔ 034 detalleMov genera texto legible para cada rama y ajustes (1.7774ms)
+  ✔ 035 ajusteDe y ajustesDe vinculan contrapartidas por movement_number (0.6226ms)
+  ✔ 036 mismoSentido compara origen y destino normalizando undefined/null (0.4581ms)
+  ✔ 037 contra construye asiento de refuerzo o reverso para entrada, salida y traslado (0.7351ms)
+  ✔ 038 bloqueoAjuste bloquea ajustes, anulados, sin bodega y con certificado (0.9151ms)
+  ✔ 039 bloqueoAjuste restringe operario a registros propios de hoy y libera admin (0.6933ms)
+  ✔ 040 recepcionDe devuelve la entrada original del lote ignorando ajustes (0.5936ms)
+✔ reglas.ts — movimientos, kardex, contrapartidas y permisos (8.1849ms)
+▶ planilla.ts — validación e importación Excel (leerPlanilla)
+  ✔ 041 leerPlanilla acepta libro vacío sin errores ni altas (32.0096ms)
+  ✔ 042 Inventario: ignora materiales cuyo código ya existe sin importar mayúsculas (31.4408ms)
+  ✔ 043 Inventario: ignora filas duplicadas dentro del mismo archivo (10.9577ms)
+  ✔ 044 Inventario: mapea Tipo "Otro" a OTHER y asigna stock 0 por defecto (4.3471ms)
+  ✔ 045 Inventario: traduce unidades u/unidades -> units y kilos -> kg (5.9811ms)
+  ✔ 046 Inventario: reporta errores con número de fila (+2) ante datos inválidos (6.2228ms)
+  ✔ 047 Empresas: ignora empresa existente normalizando puntos y mayúsculas del RUT (5.3674ms)
+  ✔ 048 Empresas: crea nueva empresa válida y asigna tipo generator_supplier por defecto (7.0541ms)
+  ✔ 049 Empresas: rechaza falta de nombre, RUT inválido, tipo inválido y correo inválido (5.5554ms)
+  ✔ 050 Lotes: ignora número de lote existente y rechaza número inexistente (7.0413ms)
+  ✔ 051 Lotes: permite recepción nueva vinculada a material y empresa creados en el mismo Excel (15.4611ms)
+  ✔ 052 Lotes: rechaza material no materia-prima o en unidades y empresa solo cliente (14.5059ms)
+  ✔ 053 Lotes: rechaza kilos <= 0 o > 50.000 kg (28.3823ms)
+  ✔ 054 Lotes: rechaza fechas futuras, texto inválido y fechas de calendario inexistentes (31-02) (15.9953ms)
+  ✔ 055 guardarCarga ejecuta altas en orden empresas -> materiales -> lotes asignando BOD-PM-ACOPIO (420.6436ms)
+✔ planilla.ts — validación e importación Excel (leerPlanilla) (614.3624ms)
+▶ certificadoPdf.ts — validaciones y generación real de PDF
+  ✔ 056 faltantesCertificado retorna lista vacía cuando los 6 datos obligatorios existen (0.6649ms)
+  ✔ 057 faltantesCertificado detecta individualmente empresa, RUT, lote, residuo, kilos<=0 y firmante (0.8317ms)
+  ✔ 058 generateCertificatePdf rechaza emitir sin guardar si faltan datos obligatorios (2.0457ms)
+  ✔ 059 generateCertificatePdf produce PDF real con código, empresa, lote, CO2 y sin QR (30.4885ms)
+  ✔ 060 generateCertificatePdf omite CO2eq evitado cuando es 0 y campos opcionales vacíos (10.8844ms)
+✔ certificadoPdf.ts — validaciones y generación real de PDF (45.3853ms)
+▶ Reportes.tsx — períodos, agregaciones y exportación Excel
+  ✔ 061 rangoDe("dia") cubre desde las 00:00 del día hasta las 00:00 siguiente (0.6419ms)
+  ✔ 062 rangoDe("semana") parte siempre en lunes incluso cuando "ahora" es domingo (0.3082ms)
+  ✔ 063 rangoDe("mes") parte en el día 1 y rangoDe("2026-10") cubre octubre exacto (0.2188ms)
+  ✔ 064 resumen interpreta fechas YYYY-MM-DD de certificados en hora local y calcula KPIs (1.6189ms)
+  ✔ 065 resumen no reescribe un mes cerrado cuando la anulación ocurre el mes siguiente (0.5354ms)
+  ✔ 066 resumen filtra materiales sin movimiento y retorna porMaterial vacío en mes sin actividad (0.322ms)
+  ✔ 067 descargar genera Excel de Inventario con columnas por bodega y stock total (27.4656ms)
+  ✔ 068 descargar genera Excel de Lotes marcando "Anulado" en columna Etapa (12.9982ms)
+  ✔ 069 descargar genera Excel de Movimientos con Estado "Anulado" y signo correcto (14.6134ms)
+  ✔ 070 descargar genera hoja con mensaje "Sin registros en el período" cuando tabla está vacía (52.5217ms)
+  ✔ 071 descargarPlanilla en período abierto ("mes") incluye pestaña Inventario y Resumen (45.3529ms)
+  ✔ 072 descargarPlanilla en mes cerrado omite pestaña Inventario y nombra archivo con YYYY-MM (14.6688ms)
+✔ Reportes.tsx — períodos, agregaciones y exportación Excel (172.1137ms)
+{
+  message: 'duplicate key value violates unique constraint "batches_batch_number_key"',
+  code: '23505'
+}
+▶ api.ts — traducción de errores, ErrorApp y reintento seguro
+  ✔ 073 enEspanol traduce errores de red y JWT expirado (2.0985ms)
+  ✔ 074 enEspanol traduce códigos SQL PostgreSQL y stock insuficiente (0.6094ms)
+  ✔ 075 enEspanol conserva mensajes P0001 o con tildes y oculta errores técnicos en inglés (0.9398ms)
+  ✔ 076 yaGuardado detecta ErrorApp 23505 solo cuando coincide el campo (1.6656ms)
+  ✔ 077 getSupabase devuelve null si faltan credenciales Vite (317.76ms)
+✔ api.ts — traducción de errores, ErrorApp y reintento seguro (325.3548ms)
+▶ api.ts — integración HTTP contra cliente @supabase/supabase-js real
+  ✔ 078 paginación por tramos (TRAMO=1000) concatena 1.250 filas en dos peticiones (174.2114ms)
+  ✔ 079 createMaterial con stock inicial 0 inserta solo el material sin movimientos (8.8344ms)
+  ✔ 080 createMaterial con stock inicial > 0 inserta en 0 y registra count_adjustment_in en su bodega (15.0856ms)
+  ✔ 081 updateMaterial nunca envía current_stock aunque venga en el objeto (7.5079ms)
+  ✔ 082 adjustStock sin diferencia (delta === 0) no ejecuta peticiones (0.6016ms)
+  ✔ 083 adjustStock negativo rechaza descuento si ninguna bodega alcanza a cubrir la baja (4.2611ms)
+{ code: '23505', message: 'duplicate key batch_number' }
+  ✔ 084 createBatch ante 23505 por reintento del mismo usuario/peso reutiliza el lote sin duplicar (12.2806ms)
+{ code: '23505', message: 'duplicate key batch_number' }
+  ✔ 085 createBatch ante 23505 de otro camión incrementa el correlativo automáticamente (16.9794ms)
+  ✔ 086 getStakeholders consulta el RPC /rest/v1/rpc/empresas (4.0339ms)
+  ✔ 087 recordMovements envía arreglo completo para inserción atómica (6.3723ms)
+{
+  code: '42501',
+  message: 'new row violates row-level security policy'
+}
+  ✔ 088 error HTTP 403 RLS de PostgREST lanza ErrorApp traducido al español (4.9071ms)
+✔ api.ts — integración HTTP contra cliente @supabase/supabase-js real (591.7725ms)
+▶ SQL y código fuente — integridad de esquema, seguridad y cero QR residual
+  ✔ 089 existen los 8 scripts SQL activos esperados (2.9017ms)
+  ✔ 090 009_quitar_qr.sql elimina qr_verification_code y actualiza check_certificate_datos sin campo QR (2.1383ms)
+  ✔ 091 tope_camion() en 004_reglas_en_la_base.sql coincide exactamente con TOPE_CAMION en frontend (3.7386ms)
+  ✔ 092 marcador [ANULADO] coincide entre SQL 004 y frontend loteAnulado() (2.3913ms)
+  ✔ 093 004_reglas_en_la_base.sql usa FOR UPDATE en ajustes para bloquear doble anulación concurrente (2.1246ms)
+  ✔ 094 004_reglas_en_la_base.sql protege current_stock con pg_trigger_depth() = 1 y prohíbe DELETE en certificados/lotes (2.37ms)
+  ✔ 095 008_contactos_solo_admin.sql oculta correo/teléfono/dirección a operario en stakeholders (1.6961ms)
+  ✔ 096 003_usuarios_y_permisos.sql habilita RLS en todas las tablas y oculta pin_hash (1.8519ms)
+  ✔ 097 007_indices.sql + 004_reglas_en_la_base.sql cubren los 12 índices esperados de kardex, lotes, stock y certificados (2.5377ms)
+  ✔ 098 src/ no contiene referencias residuales a qr_verification_code, qrimg, qrcode ni persistencia de greenspot_cuentas (10.9952ms)
+  ✔ 099 package.json no declara qrcode ni xlsx y usa versiones saneadas (0.7755ms)
+  ✔ 099b 010_ajustes_auditoria.sql implementa NULL ambiental, anular_certificado, merma lote y FOR UPDATE en bodega (2.3919ms)
+  ✔ 100 README.md y archivos de entrada index.html / main.tsx existen (1.3436ms)
+✔ SQL y código fuente — integridad de esquema, seguridad y cero QR residual (38.294ms)
+▶ E2E Navegador Real (Microsoft Edge + bundle SPA real)
+  ✔ 101 Login rechaza contraseña incorrecta en español (294.2853ms)
+  ✔ 102 Login válido como Administración carga Inicio y alertas operativas (194.2629ms)
+  ✔ 103 Navegación completa por las 8 vistas sin undefined ni NaN (1125.7972ms)
+  ✔ 104 REGRESIÓN Empresas: AquaChile excluye lote [ANULADO] (muestra 69.710 kg, no 1.958.598) (139.6059ms)
+  ✔ 105 REGRESIÓN PanelEmpresa: AquaChile lista solo lotes vigentes (69.710 kg) (11.9584ms)
+  ✔ 106 Editar empresa valida formato de RUT y creación guarda nueva empresa (216.5432ms)
+  ✔ 107 Materiales valida formulario nuevo material (vacío y código duplicado) y crea material válido (311.531ms)
+  ✔ 108 Materiales: filtro "Solo bajo el mínimo" y edición de ficha técnica (126.4061ms)
+  ✔ 109 Lotes: filtros de pestañas, buscador, panel con rótulo sin QR y avance de etapa (225.6833ms)
+  ✔ 110 Camión: valida tara > bruto y tope 50.000 kg; coma decimal "1250,5" tecla a tecla funciona (208.2358ms)
+  ✔ 111 Flujo Salida: bloquea exceso de stock y guarda despacho válido (278.0097ms)
+  ✔ 112 Flujo Traslado: misma bodega deshabilitada en destino (18.1502ms)
+  ✔ 113 Flujo Producción: bloquea salida > entrada, muestra merma 8% y guarda movimiento doble atómico (136.7628ms)
+  ✔ 114 Corrección de conteo desde Materiales abre en Paso 2 y calcula diferencia (154.5902ms)
+  ✔ 115 Ajuste Corregir peso: misma cantidad y >50t bloquean; fallo de BD no cierra diálogo; anulación funciona (495.2742ms)
+  ✔ 116 Emitir certificado en UI (sin qr_verification_code) y abrir vista previa PDF (527.0581ms)
+  ✔ 117 Reportes: mes cerrado vacío muestra "Sin movimientos en el período." y exporta Excel (295.319ms)
+  ✔ 118 Configuración: muestra BD conectada y listado completo coherente de usuarios (149.2534ms)
+  ✔ 119 Empresas Clientes: calcula kilosComprados reales tras nuevo despacho (142.3477ms)
+  ✔ 120 Movimientos: todas las pestañas filtran y muestran badge Anulado correctamente (169.4947ms)
+  ✔ 121 Ver como operario oculta menú admin, muestra franja y permite volver (148.4511ms)
+  ✔ 122 Sesión real de Operario restringe vistas admin, bloquea ajustes ajenos y no guarda cuentas en localStorage (502.3822ms)
+  ✔ 123 Responsive móvil (390x844): menú hamburguesa abre y no hay overflow horizontal (309.2161ms)
+  ✔ 124 Cuenta desactivada (is_active = false) queda bloqueada al iniciar sesión (284.8021ms)
+  ✔ 125 Cero excepciones JS no controladas durante todo el recorrido E2E (0.8583ms)
+✔ E2E Navegador Real (Microsoft Edge + bundle SPA real) (9451.9258ms)
+ℹ tests 126
+ℹ suites 11
+ℹ pass 126
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9746.4486

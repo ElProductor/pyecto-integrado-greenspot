@@ -1,0 +1,115 @@
+{
+  "base_CONC_01_05": {
+    "timestamp": "2026-11-28T00:21:51.202Z",
+    "url": "https://zhztdovskiwagarqbdzs.supabase.co",
+    "results": [
+      {
+        "id": "CONC-01",
+        "okCount": 1,
+        "stockBefore": 100,
+        "stockAfter": 20,
+        "errCode": "P0001",
+        "errMsg": "Stock insuficiente: hay 20.00 kg y se intentan sacar 80.00 kg",
+        "dtMs": 599
+      },
+      {
+        "id": "CONC-02",
+        "okCount": 1,
+        "stockBefore": 270,
+        "stockAfter": 20,
+        "errCode": "P0001",
+        "errMsg": "Este registro ya está anulado.",
+        "dtMs": 252
+      },
+      {
+        "id": "CONC-03",
+        "okCount": 1,
+        "stockBefore": 20,
+        "stockAfter": 5,
+        "errCode": "P0001",
+        "errMsg": "Stock insuficiente: hay 5.00 kg y se intentan sacar 15.00 kg",
+        "dtMs": 225
+      },
+      {
+        "id": "CONC-04",
+        "okCount": 1,
+        "errCode": "23505",
+        "errMsg": "duplicate key value violates unique constraint \"certificates_un_lote\"",
+        "dtMs": 215
+      },
+      {
+        "id": "CONC-05",
+        "okCount": 1,
+        "errCode": "23505",
+        "errMsg": "duplicate key value violates unique constraint \"batches_batch_number_key\"",
+        "dtMs": 231
+      }
+    ]
+  },
+  "ext_SEC_JWT_CONC_06_10": {
+    "timestamp": "2026-11-28T02:04:11.951Z",
+    "url": "https://zhztdovskiwagarqbdzs.supabase.co",
+    "tests": {
+      "SEC-JWT-01": {
+        "opUid": "92a5ec58-96a9-47dc-8899-dec6159c0ef4",
+        "beforeSelectRows": 4,
+        "authGetUserStillValid": true,
+        "selectBatchesRowsAfterDeact": 0,
+        "rpcEmpresasAfterDeact": {
+          "count": 0,
+          "err": null
+        },
+        "insertMovementErr": {
+          "code": "42501",
+          "msg": "new row violates row-level security policy for table \"inventory_movements\""
+        },
+        "updateBatchCountOrErr": {
+          "rows": null,
+          "err": null,
+          "status": 204
+        },
+        "storageUploadErr": "new row violates row-level security policy"
+      },
+      "CONC-06": {
+        "seededDalKg": 260000,
+        "okCount": 1,
+        "dalTotalAfterKg": 285000,
+        "dtMs": 477,
+        "errCode": "P0001",
+        "errMsg": "La bodega Planta Dalcahue - Centro Acopio y Densificado Chiloé quedaría con 310000.00 kg y su capacidad es 300000.00 kg"
+      },
+      "CONC-07": {
+        "naveBefore": 100,
+        "naveAfter": 20,
+        "batchInitialKg": 100,
+        "batchCurrentAfterMermaKg": 92,
+        "okCount": 1,
+        "dtMs": 614,
+        "errCode": "P0001",
+        "errMsg": "Stock insuficiente: hay 20.00 kg y se intentan sacar 80.00 kg"
+      },
+      "CONC-08": {
+        "sumBefore": 14220,
+        "sumAfter": 14220,
+        "okCount": 2,
+        "err1": null,
+        "err2": null,
+        "dtMs": 204
+      },
+      "CONC-09": {
+        "overPostMermaErr": "Los kilos valorizados no pueden superar los 92.00 kg vigentes del lote",
+        "parallelTwoBatchesOk": 2,
+        "dtMs": 207,
+        "anularRpcOk": true,
+        "reIssueAfterAnularOk": true,
+        "waterNullStored": true
+      },
+      "CONC-10": {
+        "firstOk": true,
+        "duplicateCode": "23505",
+        "duplicateMsg": "duplicate key value violates unique constraint \"inventory_movements_movement_number_key\"",
+        "yaGuardadoMatches": true
+      }
+    }
+  }
+}

@@ -69,6 +69,7 @@ greenspot/
 │   └── 010_ajustes_auditoria.sql   LCI nullable, anulación de certificados, merma de lote y lock de capacidad
 ├── pruebas/
 │   ├── recorrido.cjs / ajustes.cjs Pruebas E2E sin escritura (`npm run pruebas`)
+│   ├── evidencias/                 Registros brutos de pruebas, auditoría npm, concurrencia y carga 10k
 │   └── integral/                   Batería integral de 126 pruebas (`npm run pruebas:integral`)
 └── .env.example              Plantilla de configuración
 ```
@@ -132,4 +133,4 @@ El `002` carga 4 bodegas, 5 empresas, 11 materiales, 4 lotes, 4 movimientos y 2 
      *(En Windows define `$env:CHROMIUM = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'`).*
 - **Validación en vivo contra Supabase (`11/11` aprobadas):** sobre `zhztdovskiwagarqbdzs` y `npm run dev` se validaron registro cerrado, RLS/CLS (`pin_hash` y `empresas()`), emisión real de certificado sin QR (`CERT-REP-2026-0095`), anulación atómica y exclusión de `[ANULADO]` en *Empresas*, dejando luego la base limpia en su estado inicial (ver `pruebas/README.md`).
 
-Las capturas automáticas quedan en `pruebas/capturas/` y las de EV3 en `pruebas/capturas-pantalla/`.
+Las capturas automáticas quedan en `pruebas/capturas/`, las de EV3 en `pruebas/capturas-pantalla/` y los registros brutos de auditoría/pruebas en `pruebas/evidencias/`.

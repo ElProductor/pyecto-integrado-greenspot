@@ -636,6 +636,10 @@ test.describe('E2E Navegador Real (Microsoft Edge + bundle SPA real)', async () 
     await edge.clickText('Emitir certificado');
     await edge.clickText('AquaChile S.A.', '.velo.on .opcion');
     assert.match(await dlgText(), /LOTE-2026-0820/);
+    assert.match(await dlgText(), /Sin producción vinculada/);
+    assert.equal(await edge.eval("document.querySelector('.velo.on .btn.pri').disabled"), true);
+    await edge.eval("document.querySelector('#conf-cert-peso').click()");
+    await edge.waitFor("() => !document.querySelector('.velo.on .btn.pri').disabled");
     await edge.clickText('Emitir', '.velo.on .btn.pri');
     await edge.waitFor("() => document.querySelector('.panel.on')?.innerText.includes('CERT-REP-2026-0095')");
     const lastCertWrite = [...mock.getWrites()].reverse().find(w => w.tbl === 'valorization_certificates');

@@ -1,0 +1,270 @@
+{
+  "cuadratura_006": {
+    "project_id": "zhztdovskiwagarqbdzs",
+    "verified_at": "2026-11-27T23:00:33-03:00",
+    "summary": {
+      "total_movements": 15,
+      "saldo_ini_movements": 11,
+      "descuadres_material_vs_stock": 0
+    },
+    "rows": [
+      {
+        "material_code": "ECO-BENCH-URB",
+        "warehouse_code": "BOD-PM-PELLET",
+        "stock_bodega": "45.00",
+        "kardex_real": "45.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "45.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      },
+      {
+        "material_code": "ECO-COMP-120",
+        "warehouse_code": "BOD-PM-PELLET",
+        "stock_bodega": "142.00",
+        "kardex_real": "142.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "142.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      },
+      {
+        "material_code": "PEL-HDPE-EXT",
+        "warehouse_code": "BOD-PM-PELLET",
+        "stock_bodega": "31500.00",
+        "kardex_real": "31500.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "31500.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      },
+      {
+        "material_code": "PEL-HDPE-INJ",
+        "warehouse_code": "BOD-PM-PELLET",
+        "stock_bodega": "61200.00",
+        "kardex_real": "61200.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "61200.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 3
+      },
+      {
+        "material_code": "PEL-PS-CRY",
+        "warehouse_code": "BOD-PM-PELLET",
+        "stock_bodega": "15800.00",
+        "kardex_real": "15800.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "15800.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      },
+      {
+        "material_code": "PRC-EPS-BLQ",
+        "warehouse_code": "BOD-PM-PLANTA",
+        "stock_bodega": "11400.00",
+        "kardex_real": "11400.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "11400.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      },
+      {
+        "material_code": "PRC-HDPE-FLK",
+        "warehouse_code": "BOD-PM-PLANTA",
+        "stock_bodega": "18600.00",
+        "kardex_real": "18600.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "18600.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      },
+      {
+        "material_code": "RAW-EPS-BOX",
+        "warehouse_code": "BOD-PM-ACOPIO",
+        "stock_bodega": "8900.00",
+        "kardex_real": "8900.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "8900.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      },
+      {
+        "material_code": "RAW-HDPE-BOY",
+        "warehouse_code": "BOD-PM-ACOPIO",
+        "stock_bodega": "49000.00",
+        "kardex_real": "49000.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "49000.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 2
+      },
+      {
+        "material_code": "RAW-HDPE-TUB",
+        "warehouse_code": "BOD-PM-ACOPIO",
+        "stock_bodega": "15900.00",
+        "kardex_real": "15900.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "15900.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 2
+      },
+      {
+        "material_code": "RAW-PP-SACO",
+        "warehouse_code": "BOD-PM-ACOPIO",
+        "stock_bodega": "14200.00",
+        "kardex_real": "14200.00",
+        "diff_bodega_kardex": "0.00",
+        "stock_material_global": "14200.00",
+        "saldo_ini_cnt": 1,
+        "total_mov_cnt": 1
+      }
+    ]
+  },
+  "der_schema": {
+    "project_id": "zhztdovskiwagarqbdzs",
+    "verified_at": "2026-11-27T22:56:17-03:00",
+    "checks_010": {
+      "cols_cert_010": 3,
+      "cols_lci_nullable": 2,
+      "funcs_010": 5,
+      "idx_un_lote": 1,
+      "trg_merma_010": 1
+    },
+    "tables": [
+      {
+        "table_name": "batches",
+        "col_count": 17
+      },
+      {
+        "table_name": "inventory_movements",
+        "col_count": 15
+      },
+      {
+        "table_name": "inventory_stock",
+        "col_count": 6
+      },
+      {
+        "table_name": "materials_and_products",
+        "col_count": 20
+      },
+      {
+        "table_name": "profiles",
+        "col_count": 9
+      },
+      {
+        "table_name": "stakeholders",
+        "col_count": 12
+      },
+      {
+        "table_name": "valorization_certificates",
+        "col_count": 19
+      },
+      {
+        "table_name": "warehouses",
+        "col_count": 9
+      }
+    ],
+    "foreign_keys": [
+      {
+        "table_name": "batches",
+        "column_name": "created_by",
+        "foreign_table": "profiles",
+        "foreign_column": "id",
+        "constraint_name": "batches_created_by_fkey"
+      },
+      {
+        "table_name": "batches",
+        "column_name": "material_id",
+        "foreign_table": "materials_and_products",
+        "foreign_column": "id",
+        "constraint_name": "batches_material_id_fkey"
+      },
+      {
+        "table_name": "batches",
+        "column_name": "supplier_id",
+        "foreign_table": "stakeholders",
+        "foreign_column": "id",
+        "constraint_name": "batches_supplier_id_fkey"
+      },
+      {
+        "table_name": "batches",
+        "column_name": "warehouse_id",
+        "foreign_table": "warehouses",
+        "foreign_column": "id",
+        "constraint_name": "batches_warehouse_id_fkey"
+      },
+      {
+        "table_name": "inventory_movements",
+        "column_name": "batch_id",
+        "foreign_table": "batches",
+        "foreign_column": "id",
+        "constraint_name": "inventory_movements_batch_id_fkey"
+      },
+      {
+        "table_name": "inventory_movements",
+        "column_name": "created_by",
+        "foreign_table": "profiles",
+        "foreign_column": "id",
+        "constraint_name": "inventory_movements_created_by_fkey"
+      },
+      {
+        "table_name": "inventory_movements",
+        "column_name": "from_warehouse_id",
+        "foreign_table": "warehouses",
+        "foreign_column": "id",
+        "constraint_name": "inventory_movements_from_warehouse_id_fkey"
+      },
+      {
+        "table_name": "inventory_movements",
+        "column_name": "material_id",
+        "foreign_table": "materials_and_products",
+        "foreign_column": "id",
+        "constraint_name": "inventory_movements_material_id_fkey"
+      },
+      {
+        "table_name": "inventory_movements",
+        "column_name": "to_warehouse_id",
+        "foreign_table": "warehouses",
+        "foreign_column": "id",
+        "constraint_name": "inventory_movements_to_warehouse_id_fkey"
+      },
+      {
+        "table_name": "inventory_stock",
+        "column_name": "material_id",
+        "foreign_table": "materials_and_products",
+        "foreign_column": "id",
+        "constraint_name": "inventory_stock_material_id_fkey"
+      },
+      {
+        "table_name": "inventory_stock",
+        "column_name": "warehouse_id",
+        "foreign_table": "warehouses",
+        "foreign_column": "id",
+        "constraint_name": "inventory_stock_warehouse_id_fkey"
+      },
+      {
+        "table_name": "valorization_certificates",
+        "column_name": "batch_id",
+        "foreign_table": "batches",
+        "foreign_column": "id",
+        "constraint_name": "valorization_certificates_batch_id_fkey"
+      },
+      {
+        "table_name": "valorization_certificates",
+        "column_name": "created_by",
+        "foreign_table": "profiles",
+        "foreign_column": "id",
+        "constraint_name": "valorization_certificates_created_by_fkey"
+      },
+      {
+        "table_name": "valorization_certificates",
+        "column_name": "stakeholder_id",
+        "foreign_table": "stakeholders",
+        "foreign_column": "id",
+        "constraint_name": "valorization_certificates_stakeholder_id_fkey"
+      }
+    ],
+    "triggers_count": 13,
+    "indexes_count": 26
+  }
+}

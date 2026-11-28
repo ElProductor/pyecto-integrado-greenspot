@@ -1,0 +1,41 @@
+{
+  "executed_at_utc": "2026-11-28T16:51:12.623Z",
+  "executed_at_local_cl": "2026-11-28T13:51:12-03:00",
+  "project_url": "https://zhztdovskiwagarqbdzs.supabase.co",
+  "duration_ms": 14241,
+  "page_errors": [],
+  "ui_sin_nan_ni_undefined": true,
+  "recepcion_coma_decimal": {
+    "batch_number": "LOTE-2026-0846",
+    "initial_weight_kg": 1250.5
+  },
+  "produccion_vinculada_010": {
+    "aviso_sin_lote_visible_antes": true,
+    "aviso_oculto_tras_vincular": true,
+    "weight_before_kg": 1250.5,
+    "weight_after_merma_kg": 1242.5,
+    "descuento_automatico_kg": 8
+  },
+  "certificado_con_produccion_vinculada": {
+    "textoVinculada": true,
+    "checkOculto": true,
+    "emitirHabilitado": true,
+    "cert1_code": "CERT-REP-2026-0095",
+    "total_kg_valorized": 1242.5,
+    "water_saved_liters": null,
+    "oil_saved_barrels": null,
+    "panel_muestra_codigo": true,
+    "nota_lci_presente_en_pdf_src": true
+  },
+  "anulacion_y_reemision_010": {
+    "anular_rpc_ok": true,
+    "reissued_code": "CERT-E2E-RE-1795884669174",
+    "reissued_status": "vigente"
+  },
+  "certificado_sin_produccion_vinculada": {
+    "batch_number": "LOTE-E2E-SP-1795884669174",
+    "disabled_before_check": true,
+    "disabled_after_check": false
+  },
+  "reportes_excel_roundtrip_rows": 1
+}
